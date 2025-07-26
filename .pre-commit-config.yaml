@@ -1,0 +1,189 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+        args:
+          - --allow-multiple-documents
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args:
+          - --pytest-test-first
+      - id: no-commit-to-branch
+      - id: pretty-format-json
+        args:
+          - --autofix
+          - --indent
+          - "4"
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.20.0
+    hooks:
+      - id: pyupgrade
+        args:
+          - --keep-runtime-typing
+          - --py313-plus
+        stages:
+          - manual
+          - pre-merge-commit
+          - pre-push
+  - repo: https://github.com/pycqa/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args:
+          # - docs
+          - src
+          # - tests
+          # - noxfile.py
+        pass_filenames: false
+        stages:
+          - manual
+          - pre-merge-commit
+          - pre-push
+  - repo: https://github.com/pycqa/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+        args:
+          - .
+        pass_filenames: false
+        stages:
+          - manual
+          - pre-merge-commit
+          - pre-push
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        additional_dependencies:
+          - .[jupyter]
+        args:
+          # - docs
+          - src
+          # - tests
+          # - noxfile.py
+        pass_filenames: false
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        args:
+          - --recursive
+          - --severity-level
+          - high
+          - --confidence-level
+          - high
+          # - docs
+          - src
+          # - tests
+          # - noxfile.py
+        pass_filenames: false
+        stages:
+          - manual
+          - pre-merge-commit
+          - pre-push
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        args:
+          # - docs
+          - src
+          # - tests
+          # - noxfile.py
+        pass_filenames: false
+        stages:
+          - manual
+          - pre-merge-commit
+          - pre-push
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic
+        args:
+          - --ignore-missing-imports
+          - --scripts-are-modules
+        pass_filenames: false
+        stages:
+          - manual
+  - repo: https://github.com/PyCQA/pylint
+    rev: v3.3.7
+    hooks:
+      - id: pylint
+        args:
+          - --disable
+          - import-error
+          # - docs
+          - src
+          # - tests
+          # - noxfile.py
+        pass_filenames: false
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.5
+    hooks:
+      - id: ruff-check
+        args:
+          - .
+        pass_filenames: false
+      - id: ruff-format
+        args:
+          - .
+        pass_filenames: false
+        stages:
+          - manual
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: v2.14
+    hooks:
+      - id: vulture
+        pass_filenames: false
+        stages:
+          - manual
+          - pre-merge-commit
+          - pre-push
+  - repo: https://github.com/adamchainz/blacken-docs
+    rev: 1.19.1
+    hooks:
+      - id: blacken-docs
+        args:
+          - --line-length
+          - "87"
+          - --target-version
+          - py313
+  - repo: https://github.com/numpy/numpydoc
+    rev: v1.9.0
+    hooks:
+      - id: numpydoc-validation
+        files: src
+        stages:
+          - manual
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.24.1
+    hooks:
+      - id: validate-pyproject
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - .[toml]
+        args:
+          - --write-changes
+        stages:
+          - manual
+default_language_version:
+  python: python3.13
+fail_fast: false

@@ -1,0 +1,312 @@
+[project]
+name = "mcp-learning"
+version = "0.0.1"
+description = "Exploring different features of MCP servers and clients"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.13,<3.14"
+license = "AGPL-3.0-or-later"
+authors = [
+  { name = "Anirban Ray", email = "39331844+yarnabrina@users.noreply.github.com" }
+]
+maintainers = [
+  { name = "Anirban Ray", email = "39331844+yarnabrina@users.noreply.github.com" }
+]
+keywords = [
+  "mcp",
+  "mcp-server",
+  "mcp-client",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Framework :: Pydantic",
+  "Framework :: Pydantic :: 2",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Private :: Do Not Upload",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development",
+  "Topic :: Utilities",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "black",
+  "pip",
+  "pre-commit",
+  "pylint",
+  "ruff",
+]
+
+[build-system]
+requires = [
+  "uv_build>=0.8.3,<0.9",
+]
+build-backend = "uv_build"
+
+[tool.black]
+line-length = 99
+skip_magic_trailing_comma = true
+target-version = [
+  "py313",
+]
+
+[tool.ruff]
+fix = true
+indent-width = 4
+line-length = 99
+output-format = "grouped"
+preview = false
+respect-gitignore = true
+src = [
+  # "docs",
+  "src",
+  # "tests",
+  # "noxfile.py",
+]
+target-version = "py313"
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+indent-style = "space"
+skip-magic-trailing-comma = false
+preview = false
+quote-style = "double"
+
+[tool.ruff.lint]
+fixable = [
+  "ALL",
+]
+ignore = [
+  "COM",  # flake8-commas
+  "CPY",  # flake8-copyright
+  "D213",  # Multi-line docstring summary should start at the second line
+  "DTZ",  # flake8-datetimez
+  "EM",  # flake8-errmsg
+  "FBT",  # flake8-boolean-trap
+  "FIX",  # flake8-fixme
+  "G",  # flake8-logging-format
+  "ICN",  # flake8-import-conventions
+  "PD",  # pandas-vet
+  "RET501",  # Do not explicitly return None in function if it is the only possible return value
+  "RET502",  # Do not implicitly return None in function able to return non-None value
+  "RET503",  # Missing explicit return at the end of function able to return non-None value
+  "RET504",  # Unnecessary assignment to {name} before return statement
+  "TC",  # flake8-type-checking
+  "TID252",  # Prefer absolute imports over relative imports from parent modules
+  "TRY003",  # Avoid specifying long messages outside the exception class
+]
+preview = false
+select = [
+  "ALL",
+]
+task-tags = [
+  "FIXME",
+  "TODO",
+]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+ignore-fully-untyped = true
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+  "fastapi.Depends",
+  "fastapi.Query",
+  "pydantic.Field",
+]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.lint.flake8-type-checking]
+exempt-modules = [
+  "typing",
+  "typing_extensions",
+]
+quote-annotations = true
+runtime-evaluated-base-classes = [
+  "pydantic.BaseModel",
+]
+runtime-evaluated-decorators = [
+  "pydantic.validate_call",
+]
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = [
+  "pydantic.field_validator",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# "docs/**/conf.py" = [
+#   "INP001",  # File {filename} is part of an implicit namespace package. Add an __init__.py.
+# ]
+"src/**/__init__.py" = [
+  "F401",  # {name} imported but unused; consider using importlib.util.find_spec to test for availability
+]
+# "tests/**/conftest.py" = [
+#   "INP001",  # File {filename} is part of an implicit namespace package. Add an __init__.py.
+#   "PLR0913",  # Too many arguments in function definition ({c_args} > {max_args})
+# ]
+# "tests/**/test_*.py" = [
+#   "INP001",  # File {filename} is part of an implicit namespace package. Add an __init__.py.
+#   "PLR0913",  # Too many arguments in function definition ({c_args} > {max_args})
+#   "S101",  # Use of assert detected
+# ]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 99
+max-line-length = 99
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+ignore-decorators = [
+  "typing.overload",
+]
+property-decorators = [
+  "pydantic.computed_field",
+]
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.isort]
+overwrite_in_place = true
+profile = "black"
+atomic = true
+line_length = 99
+remove_redundant_aliases = true
+split_on_trailing_comma = false
+src_paths = [
+  # "docs",
+  "src",
+  # "tests",
+  # "noxfile.py",
+]
+py_version = 313
+
+[tool.pylint.main]
+extension-pkg-allow-list = [
+  "pydantic",
+]
+fail-under = 8.5
+jobs = 0
+recursive = true
+
+[tool.pylint.basic]
+include-naming-hint = true
+
+[tool.pylint.format]
+max-line-length = 99
+
+[tool.pylint.logging]
+logging-format-style = "new"
+
+[tool.pylint."messages control"]
+enable = [
+  "all",
+]
+disable = [
+  "import-outside-toplevel",  # Used when an import statement is used anywhere other than the module toplevel. Move this import to the top of the file.
+  "logging-fstring-interpolation",  # Used when a logging statement has a call form of "logging.<logging method>(f"...")".Use another type of string formatting instead. You can use % formatting but leave interpolation to the logging function by passing the parameters as arguments. If logging-format-interpolation is disabled then you can use str.format. If logging-not-lazy is disabled then you can use % formatting as normal.
+]
+
+[tool.pylint.reports]
+output-format = "colorized"
+
+# [tool.pytest.ini_options]
+# addopts = "--junit-xml=junit.xml --doctest-modules --doctest-ignore-import-errors --doctest-continue-on-failure"
+# console_output_style = "count"
+
+# [tool.coverage.paths]
+# source = [
+#   "src",
+#   "*/site-packages",
+# ]
+
+# [tool.coverage.run]
+# branch = true
+# command_line = "--module pytest"
+# data_file = ".coverage"
+# include = [
+#   "src/**/*.py",
+# ]
+# omit = [
+#   "tests/**/conftest.py",
+#   "tests/**/test_*.py",
+# ]
+
+# [tool.coverage.report]
+# exclude_lines = [
+#   "pragma: no cover",
+#   "if __name__ == .__main__.:",
+#   "if typing.TYPE_CHECKING:",
+# ]
+# fail_under = 85
+# include = [
+#   "src/**/*.py",
+# ]
+# include_namespace_packages = true
+# omit = [
+#   "tests/**/conftest.py",
+#   "tests/**/test_*.py",
+# ]
+# precision = 2
+# show_missing = true
+
+# [tool.coverage.html]
+# directory = "htmlcov"
+
+# [tool.coverage.xml]
+# output = "coverage.xml"
+
+[tool.mypy]
+files = [
+  "src",
+]
+exclude = [
+  "conftest",
+  "test_",
+]
+strict = true
+
+[tool.autoflake]
+in-place = true
+remove-all-unused-imports = true
+recursive = true
+expand-star-imports = true
+ignore-init-module-imports = true
+remove-duplicate-keys = true
+remove-unused-variables = true
+
+[tool.vulture]
+min_confidence = 100
+paths = [
+  # "docs",
+  "src",
+  # "tests",
+  # "noxfile.py",
+]
+
+[tool.numpydoc_validation]
+checks = [  # Report findings on all checks except the ones listed below "all"
+  "all",
+  "GL01",  # Docstring text (summary) should start in the line immediately after the opening quotes (not in the same line, or leaving a blank line in between)
+  "ES01",  # No extended summary found
+  "PR08",  # Parameter "{param_name}" description should start with a capital letter
+  "PR09",  # Parameter "{param_name}" description should finish with "."
+  "RT04",  # Return value description should start with a capital letter
+  "RT05",  # Return value description should finish with "."
+  "SA01",  # See Also section not found
+  "EX01",  # No examples section found
+]
+exclude = [  # Don't report issues on objects matching any of the regular regular expressions
+  "\\.__init__$",
+]
