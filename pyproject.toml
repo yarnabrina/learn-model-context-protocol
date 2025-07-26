@@ -31,7 +31,13 @@ classifiers = [
   "Topic :: Utilities",
   "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+  "mcp>=1.12.2,<2",
+  "openai>=1.97.1,<2",
+  "pydantic>=2.11.7,<3",
+  "pydantic-settings>=2.10.1,<3",
+  "rich>=14.1.0,<15",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -41,6 +47,10 @@ dev = [
   "pylint",
   "ruff",
 ]
+
+[project.scripts]
+mcp-server = "mcp_learning:mcp_server_main"
+mcp-client = "mcp_learning:mcp_client_main"
 
 [build-system]
 requires = [
