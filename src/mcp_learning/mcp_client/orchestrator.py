@@ -320,7 +320,7 @@ class MCPClient:
         if (structured_result := tool_result.structuredContent) is not None:
             return json.dumps(structured_result)
 
-        return json.dumps(tool_result.content)
+        return json.dumps([element.model_dump() for element in tool_result.content])
 
 
 class OpenAIOrchestrator:
