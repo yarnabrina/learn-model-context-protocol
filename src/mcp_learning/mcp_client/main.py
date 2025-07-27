@@ -77,7 +77,9 @@ class ChatInterface:
         self.settings = settings
 
         self.mcp_client = MCPClient(settings)
-        self.llm_orchestrator = OpenAIOrchestrator(self.mcp_client, self.settings)
+        self.llm_orchestrator = OpenAIOrchestrator(
+            self.mcp_client, self.settings, system_prompt=SYSTEM_PROMPT
+        )
 
     @functools.cached_property
     def command_patterns(self: "ChatInterface") -> dict[ChatCommand, str]:
