@@ -342,10 +342,14 @@ class OpenAIOrchestrator:
     """
 
     def __init__(
-        self: "OpenAIOrchestrator", mcp_client: MCPClient, settings: Configurations
+        self: "OpenAIOrchestrator",
+        mcp_client: MCPClient,
+        settings: Configurations,
+        system_prompt: str | None = None,
     ) -> None:
         self.mcp_client = mcp_client
         self.settings = settings
+        self.system_prompt = system_prompt
 
         self.openai_client = OpenAIClient(self.settings)
         self.conversation_history: list[ChatCompletionMessageParam] = []
@@ -367,7 +371,9 @@ class OpenAIOrchestrator:
         available_openai_tools = await self.mcp_client.get_all_openai_functions()
 
         chat_completion = self.openai_client.get_streaming_openai_response(
-            self.conversation_history, tools=available_openai_tools
+            self.conversation_history,
+            system_prompt=self.system_prompt,
+            tools=available_openai_tools,
         )
 
         tool_calls: dict[int, ChatCompletionMessageToolCallParam] = {}
