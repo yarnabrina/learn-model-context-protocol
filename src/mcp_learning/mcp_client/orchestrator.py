@@ -168,7 +168,7 @@ class MCPClient:
 
         return Status.SUCCESS
 
-    def list_mcp_server_tools(self: "MCPClient", server_name: str) -> list[str]:
+    def list_mcp_server_tools(self: "MCPClient", server_name: str) -> dict[str, str]:
         """List all tools available on a specific MCP server.
 
         Parameters
@@ -178,17 +178,17 @@ class MCPClient:
 
         Returns
         -------
-        list[str]
-            list of tool names available on the specified MCP server
+        dict[str, str]
+            mapping of tool names to their display names for the specified MCP server
         """
         try:
             server_tools = self.mcp_server_tools[server_name]
         except KeyError as error:
             internal_info(f"Failed to remove MCP server {server_name}: {error}.\n")
 
-            return []
+            return {}
 
-        return [tool.display_name for tool in server_tools]
+        return {tool.name: tool.display_name for tool in server_tools}
 
     def describe_mcp_server_tool(
         self: "MCPClient", server_name: str, tool_name: str
@@ -320,7 +320,7 @@ class MCPClient:
         if (structured_result := tool_result.structuredContent) is not None:
             return json.dumps(structured_result)
 
-        return json.dumps(tool_result.content)
+        return json.dumps([element.model_dump() for element in tool_result.content])
 
 
 class OpenAIOrchestrator:
