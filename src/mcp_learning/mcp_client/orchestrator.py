@@ -2,18 +2,27 @@
 
 import collections.abc
 import enum
+import http
 import json
 
 import pydantic
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
+from mcp.shared.context import RequestContext
 from mcp.shared.metadata_utils import get_display_name
-from mcp.types import TextContent, ToolAnnotations
+from mcp.types import (
+    CreateMessageRequestParams,
+    CreateMessageResult,
+    ErrorData,
+    TextContent,
+    ToolAnnotations,
+)
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageParam,
     ChatCompletionMessageToolCallParam,
     ChatCompletionToolParam,
+    ChatCompletionUserMessageParam,
 )
 from openai.types.chat.chat_completion_message_tool_call_param import Function
 from openai.types.shared_params import FunctionDefinition
@@ -241,6 +250,89 @@ class MCPClient:
             for tool in server_tools
         ]
 
+    async def sampling_handler(
+        self: "MCPClient", context: RequestContext, parameters: CreateMessageRequestParams
+    ) -> CreateMessageResult | ErrorData:
+        """Handle sampling requests for OpenAI API calls with MCP tools.
+
+        Parameters
+        ----------
+        context : RequestContext
+            request context containing information about the sampling request
+        parameters : CreateMessageRequestParams
+            parameters for the sampling request, including messages and customisations
+
+        Returns
+        -------
+        CreateMessageResult | ErrorData
+            result of the sampling request, either a message result or an error data
+        """
+        # TODO (@yarnabrina): find out to use context
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
+        del context
+
+        internal_info(f"Processing sampling request: {parameters}.\n")
+
+        openai_customisations: dict = {"max_completion_tokens": parameters.maxTokens}
+
+        if (temperature := parameters.temperature) is not None:
+            openai_customisations["temperature"] = temperature
+
+        if (stop_sequences := parameters.stopSequences) is not None:
+            openai_customisations["stop"] = stop_sequences
+
+        messages = [
+            ChatCompletionUserMessageParam(
+                content=(
+                    message.content.text
+                    if isinstance(message.content, TextContent)
+                    else str(message.content)
+                ),
+                role="user",
+            )
+            for message in parameters.messages
+        ]
+
+        available_openai_tools = await self.get_all_openai_functions()
+
+        # TODO (@yarnabrina): find out to use parameters.includeContext
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/5
+        filtered_openai_tools = available_openai_tools
+
+        try:
+            non_streaming_openai_response = (
+                await self.openai_client.get_non_streaming_openai_response(
+                    messages,
+                    system_prompt=parameters.systemPrompt,
+                    tools=filtered_openai_tools,
+                    openai_customisations=openai_customisations,
+                )
+            )
+        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            internal_info(f"Failed to get OpenAI response: {error}.\n")
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message=f"Failed to get OpenAI response: {error}.",
+            )
+
+        internal_info(f"Received response from OpenAI: {non_streaming_openai_response}.\n")
+
+        if not (choices := non_streaming_openai_response.choices):
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message="No choices returned from OpenAI API.",
+            )
+
+        choice = choices[0]
+
+        return CreateMessageResult(
+            role="assistant",
+            content=TextContent(type="text", text=choice.message.content or ""),
+            model=self.settings.language_model,
+            stopReason=choice.finish_reason,
+        )
+
     async def execute_tool_call(  # noqa: PLR0911
         self: "MCPClient", tool_name: str, arguments: dict
     ) -> str:
@@ -280,7 +372,9 @@ class MCPClient:
                 write_stream,
                 _,
             ):
-                async with ClientSession(read_stream, write_stream) as session:
+                async with ClientSession(
+                    read_stream, write_stream, sampling_callback=self.sampling_handler
+                ) as session:
                     await session.initialize()
 
                     tool_result = await session.call_tool(actual_tool_name, arguments=arguments)
