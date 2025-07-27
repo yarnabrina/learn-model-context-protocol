@@ -12,6 +12,7 @@ from .arithmetic_operations import (
     subtract_numbers,
 )
 from .configurations import Configurations
+from .simplification import evaluate_arithmetic_expression, parse_arithmetic_expression
 
 
 def main() -> None:
@@ -76,6 +77,24 @@ def main() -> None:
         description="Perform division of two real numbers",
         annotations=ToolAnnotations(title="Division", readOnlyHint=True, openWorldHint=False),
         structured_output=True,
+    )
+    mcp_server.add_tool(
+        parse_arithmetic_expression,
+        title="Parse Arithmetic Expression",
+        description="Parse a text into a valid arithmetic expression",
+        annotations=ToolAnnotations(
+            title="Arithmetic Expression Parser", readOnlyHint=True, openWorldHint=True
+        ),
+        structured_output=False,
+    )
+    mcp_server.add_tool(
+        evaluate_arithmetic_expression,
+        title="Evaluate Arithmetic Expression",
+        description="Evaluate a valid postfix arithmetic expression",
+        annotations=ToolAnnotations(
+            title="Arithmetic Expression Evaluator", readOnlyHint=True, openWorldHint=False
+        ),
+        structured_output=False,
     )
 
     mcp_server.run(transport="streamable-http")
