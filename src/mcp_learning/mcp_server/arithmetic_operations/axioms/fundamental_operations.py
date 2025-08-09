@@ -74,7 +74,7 @@ def multiply_numbers(multiplicand: float, multiplier: float) -> MultiplicationRe
     Returns
     -------
     MultiplicationResult
-        product of two `multiplicand` and `multiplier`
+        product of `multiplicand` and `multiplier`
 
     Examples
     --------
