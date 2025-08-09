@@ -465,12 +465,12 @@ class OpenAIOrchestrator:
 
     Parameters
     ----------
-    mcp_client : MCPClient
-        client for managing MCP servers and their tools
     settings : Configurations
         language model configurations containing API keys and customisations
     system_prompt : str | None, optional
         initial system prompt to set the context, by default None
+    mcp_client : MCPClient, optional
+        client for managing MCP servers and their tools, by default None
 
     Attributes
     ----------
@@ -482,13 +482,13 @@ class OpenAIOrchestrator:
 
     def __init__(
         self: "OpenAIOrchestrator",
-        mcp_client: MCPClient,
         settings: Configurations,
         system_prompt: str | None = None,
+        mcp_client: MCPClient | None = None,
     ) -> None:
-        self.mcp_client = mcp_client
         self.settings = settings
         self.system_prompt = system_prompt
+        self.mcp_client = mcp_client
 
         self.openai_client = OpenAIClient(self.settings)
         self.conversation_history: list[ChatCompletionMessageParam] = []
@@ -507,7 +507,9 @@ class OpenAIOrchestrator:
         list[dict]
             tool calls from the OpenAI API response
         """
-        available_openai_tools = await self.mcp_client.get_all_openai_functions()
+        available_openai_tools = (
+            None if self.mcp_client is None else await self.mcp_client.get_all_openai_functions()
+        )
 
         chat_completion = self.openai_client.get_streaming_openai_response(
             self.conversation_history,

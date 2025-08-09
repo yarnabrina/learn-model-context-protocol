@@ -82,7 +82,7 @@ class ChatInterface:
 
         self.mcp_client = MCPClient(settings)
         self.llm_orchestrator = OpenAIOrchestrator(
-            self.mcp_client, self.settings, system_prompt=SYSTEM_PROMPT
+            self.settings, system_prompt=SYSTEM_PROMPT, mcp_client=self.mcp_client
         )
 
     @functools.cached_property
