@@ -10,6 +10,24 @@ ENVIRONMENT_FILE = "mcp_client.env"
 ENVIRONMENT_FILE_ENCODING = "utf-8"
 
 
+class LogLevel(enum.StrEnum):
+    """Define log levels for the server."""
+
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class ServerConfigurations(pydantic_settings.BaseSettings):
+    """Define configurations for the MCP server."""
+
+    debug: pydantic_settings.CliImplicitFlag[bool] = False
+    log_level: LogLevel = LogLevel.WARNING
+    log_file: str | None = "mcp_client.log"
+
+
 class LanguageModelProviderType(enum.StrEnum):
     """Define types of language model providers."""
 
@@ -95,7 +113,9 @@ class LanguageModelConfigurations(pydantic_settings.BaseSettings):
     language_model_timeout: int = 300
 
 
-class Configurations(LanguageModelConfigurations, LanguageModelProviderConfigurations):
+class Configurations(
+    LanguageModelConfigurations, LanguageModelProviderConfigurations, ServerConfigurations
+):
     """Aggregate all configurations for the MCP client."""
 
     model_config = pydantic_settings.SettingsConfigDict(
@@ -116,4 +136,5 @@ __all__ = [
     "LanguageModelProviderConfigurations",
     "LanguageModelProviderType",
     "OpenAIConfigurations",
+    "ServerConfigurations",
 ]

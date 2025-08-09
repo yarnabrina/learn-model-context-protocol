@@ -74,7 +74,13 @@ class SimpleArithmeticOperator(enum.StrEnum):
 
 
 class InvalidOperatorError(Exception):
-    """Raised when unsupported operators are encountered."""
+    """Raised when unsupported operators are encountered.
+
+    Parameters
+    ----------
+    operator : str
+        the unsupported operator that caused the error
+    """
 
     def __init__(self: "InvalidOperatorError", operator: str) -> None:
         super().__init__(f"Unsupported operator encountered: {operator=}.")
