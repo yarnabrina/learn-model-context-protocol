@@ -12,34 +12,38 @@ from .orchestrator import MCPClient, OpenAIOrchestrator, Status
 
 HELP_MESSAGE = """
 /help
-    Show this help message.
+    Displays this help message.
 
 /add_server <server_name> <server_url>
-    Add/register a new MCP server.
+    Adds or registers a new MCP server.
 
 /remove_server <server_name>
-    Remove an existing MCP server.
+    Removes an existing MCP server.
 
 /list_servers
-    List all configured MCP servers.
+    Lists all configured MCP servers.
 
 /list_tools <server_name>
-    List available tools for a specific server.
+    Lists available tools for a specific server.
 
 /describe_tool <server_name> <tool_name>
-    Show details for a specific tool on a server.
+    Displays details for a specific tool on a server.
 
 /quit
-    Exit the chat.
+    Exits the chat.
 """
 
-SYSTEM_PROMPT = f"""You are a helpful assistant.
+SYSTEM_PROMPT = f"""You are a helpful assistant created to demonstrate the use of available tools.
 
-You help users to interact with the available tools. You can provide information about the tools, call the tools, and assist users in their tasks. You can also chat with users to understand their requirements and provide them with the necessary information.
+Your primary objective is to showcase the functionality of the provided tools. Whenever a user's request can be addressed by a tool, you **must** use it, even if the task appears simple. This is essential for demonstration purposes.
 
-If necessary tools are unavailable, you do not try to solve on your own and inform users about lack of current capability.
+If a tool call fails or produces an incorrect result, clearly inform the user of the error. After reporting the issue, you may provide the correct answer yourself, if possible, to highlight the difference.
 
-The following options are available to user. If you detect a message is passed to you by mistake or because of typo, identify the users intent and prompt them with the correction.
+Always **prioritise using tools** for appropriate tasks and be transparent about any limitations or errors.
+
+If a user's message contains typographical errors or appears misdirected, do your best to interpret their intent and suggest the correct command.
+
+The available commands are:
 
 {HELP_MESSAGE}
 """  # noqa: E501
