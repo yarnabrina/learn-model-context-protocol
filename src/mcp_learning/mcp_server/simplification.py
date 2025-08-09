@@ -1,4 +1,4 @@
-"""Provide a function to parse arithmetic expressions from text."""
+"""Provide functionality to parse and solve arithmetic expressions from natural language."""
 
 import enum
 
@@ -132,4 +132,9 @@ async def evaluate_arithmetic_expression(expression: str) -> float:
     return stack.pop()
 
 
-__all__ = ["evaluate_arithmetic_expression", "parse_arithmetic_expression"]
+__all__ = [
+    "InvalidOperatorError",
+    "SimpleArithmeticOperator",
+    "evaluate_arithmetic_expression",
+    "parse_arithmetic_expression",
+]
