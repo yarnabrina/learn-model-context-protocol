@@ -14,6 +14,8 @@ from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
     CreateMessageRequestParams,
     CreateMessageResult,
+    ElicitRequestParams,
+    ElicitResult,
     ErrorData,
     LoggingMessageNotificationParams,
     TextContent,
@@ -22,6 +24,7 @@ from mcp.types import (
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageParam,
+    ChatCompletionSystemMessageParam,
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
 )
@@ -32,6 +35,7 @@ from openai.types.chat.chat_completion_message_function_tool_call_param import (
 from openai.types.shared_params import FunctionDefinition
 
 from .configurations import Configurations
+from .console import bot_response, user_prompt
 from .llm import OpenAIClient
 
 LOGGER = logging.getLogger(__name__)
@@ -73,6 +77,49 @@ class OpenAIFunctionDefinition(pydantic.BaseModel):
     name: str
     description: str | None = None
     parameters: dict | None = None
+
+
+ELICITATION_REQUEST_PROMPT = """You are an elicitation assistant.
+
+- Your task is to help the user provide the required information for a tool call.
+- The user has provided inputs that does not match the expected schema.
+- The MCP server has requested you to elicit the missing information.
+- You should inform user about the response and requested missing information from the MCP server.
+- Then you should create a friendly and clear prompt for the user to respond to.
+"""
+
+
+ELICITATION_RESPONSE_PROMPT = """You are an elicitation assistant.
+
+- Your task is to help the parse the user response to elicitation request.
+- The user provided inputs that does not match the expected schema.
+- The MCP server requested you to elicit the missing information.
+- You informed user about the response and requested missing information from the MCP server.
+- Based on that, user had the option to accept, decline or cancel the elicitation.
+- If the user accepts, you should parse their response to match the expected schema.
+- If user explicitly declines or dismisses, you should parse accordingly.
+- Return only a JSON object containing the extracted fields, with correct types and values.
+- Do not include any explanation or extra text, including backticks or markup.
+
+If cancelled, return following JSON object exactly:
+
+{
+    "action": "cancel"
+}
+
+If declined, return JSON object with following structure:
+
+{
+    "action": "decline"
+}
+
+If accepted, return a JSON object with the following structure:
+
+{
+    "action": "accept",
+    "content": "object with MCP server requested schema"
+}
+"""
 
 
 class MCPClient:
@@ -358,6 +405,123 @@ class MCPClient:
             stopReason=choice.finish_reason,
         )
 
+    async def elicitation_handler(
+        self: "MCPClient", context: RequestContext, parameters: ElicitRequestParams
+    ) -> ElicitResult | ErrorData:
+        """Handle elicitation requests for MCP tools.
+
+        Parameters
+        ----------
+        context : RequestContext
+            request context containing information about the elicitation request
+        parameters : ElicitRequestParams
+            parameters for the elicitation request, including message and requested schema
+
+        Returns
+        -------
+        ElicitResult | ErrorData
+            result of the elicitation request, either an elicitation result or an error data
+        """
+        # TODO (@yarnabrina): find out to use context
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
+        del context
+
+        elicitation_request_messages = [
+            ChatCompletionSystemMessageParam(content=ELICITATION_REQUEST_PROMPT, role="system"),
+            ChatCompletionAssistantMessageParam(
+                role="assistant",
+                content="\n".join(
+                    [
+                        f"MCP Server Message: {parameters.message}",
+                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
+                    ]
+                ),
+            ),
+        ]
+
+        try:
+            elicitation_request_openai_response = (
+                await self.openai_client.get_non_streaming_openai_response(
+                    elicitation_request_messages
+                )
+            )
+        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message=f"Failed to get OpenAI response: {error}.",
+            )
+
+        LOGGER.debug(f"Received response from OpenAI: {elicitation_request_openai_response}.")
+
+        if not (choices := elicitation_request_openai_response.choices):
+            LOGGER.warning("Received empty response from OpenAI.")
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message="No choices returned from OpenAI API.",
+            )
+
+        elicitation_request_message = choices[0].message.content or ""
+
+        bot_response(elicitation_request_message)
+
+        user_input = user_prompt()
+
+        elicitation_response_messages = [
+            ChatCompletionSystemMessageParam(content=ELICITATION_RESPONSE_PROMPT, role="system"),
+            ChatCompletionAssistantMessageParam(
+                role="assistant",
+                content="\n".join(
+                    [
+                        f"MCP Server Message: {parameters.message}",
+                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
+                    ]
+                ),
+            ),
+            ChatCompletionAssistantMessageParam(
+                role="assistant", content=elicitation_request_message
+            ),
+            ChatCompletionUserMessageParam(content=user_input, role="user"),
+        ]
+
+        try:
+            elicitation_response_openai_response = (
+                await self.openai_client.get_non_streaming_openai_response(
+                    elicitation_response_messages
+                )
+            )
+        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message=f"Failed to get OpenAI response: {error}.",
+            )
+
+        LOGGER.debug(f"Received response from OpenAI: {elicitation_response_openai_response}.")
+
+        if not (choices := elicitation_response_openai_response.choices):
+            LOGGER.warning("Received empty response from OpenAI.")
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message="No choices returned from OpenAI API.",
+            )
+
+        try:
+            elicitation_response_message = json.loads(choices[0].message.content or "{}")
+        except json.JSONDecodeError as error:
+            LOGGER.warning("Failed to parse elicitation response as JSON.", exc_info=True)
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message=f"Failed to parse elicitation response: {error}.",
+            )
+
+        return elicitation_response_message
+
     async def logging_handler(
         self: "MCPClient", parameters: LoggingMessageNotificationParams
     ) -> None:
@@ -413,6 +577,7 @@ class MCPClient:
                     read_stream,
                     write_stream,
                     sampling_callback=self.sampling_handler,
+                    elicitation_callback=self.elicitation_handler,
                     logging_callback=self.logging_handler,
                 ) as session:
                     await session.initialize()
