@@ -48,6 +48,7 @@ Return only the postfix arithmetic expression without any additional text or exp
         ],
         max_tokens=2048,
         system_prompt=instruction,
+        include_context="none",
         temperature=0,
     )
 

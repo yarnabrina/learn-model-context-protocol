@@ -329,12 +329,17 @@ class MCPClient:
         ]
 
     async def sampling_handler(
-        self: "MCPClient", context: RequestContext, parameters: CreateMessageRequestParams
+        self: "MCPClient",
+        tool_call_id: str,
+        context: RequestContext,
+        parameters: CreateMessageRequestParams,
     ) -> CreateMessageResult | ErrorData:
         """Handle sampling requests for OpenAI API calls with MCP tools.
 
         Parameters
         ----------
+        tool_call_id : str
+            unique identifier for the tool call
         context : RequestContext
             request context containing information about the sampling request
         parameters : CreateMessageRequestParams
@@ -349,6 +354,20 @@ class MCPClient:
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
 
+        sampling_events: dict = {
+            "server_messages": [
+                (
+                    message.content.text
+                    if isinstance(message.content, TextContent)
+                    else str(message.content)
+                )
+                for message in parameters.messages
+            ]
+        }
+
+        if parameters.systemPrompt:
+            sampling_events["server_instruction"] = parameters.systemPrompt
+
         openai_customisations: dict = {"max_completion_tokens": parameters.maxTokens}
 
         if (temperature := parameters.temperature) is not None:
@@ -358,22 +377,35 @@ class MCPClient:
             openai_customisations["stop"] = stop_sequences
 
         messages = [
-            ChatCompletionUserMessageParam(
-                content=(
-                    message.content.text
-                    if isinstance(message.content, TextContent)
-                    else str(message.content)
-                ),
-                role="user",
-            )
-            for message in parameters.messages
+            ChatCompletionUserMessageParam(content=message, role="user")
+            for message in sampling_events["server_messages"]
         ]
 
         available_openai_tools = await self.get_all_openai_functions()
 
         # TODO (@yarnabrina): find out to use parameters.includeContext
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/5
-        filtered_openai_tools = available_openai_tools
+        match parameters.includeContext:
+            case "none":
+                filtered_openai_tools = []
+            case "thisServer":
+                filtered_openai_tools = [
+                    tool
+                    for tool in available_openai_tools
+                    if tool["function"]["name"].endswith(
+                        self.tool_call_events[tool_call_id]["tool_name"]
+                    )
+                ]
+            case "allServers":
+                filtered_openai_tools = available_openai_tools
+            case None:
+                filtered_openai_tools = [
+                    tool
+                    for tool in available_openai_tools
+                    if not tool["function"]["name"].endswith(
+                        self.tool_call_events[tool_call_id]["tool_name"]
+                    )
+                ]
 
         try:
             non_streaming_openai_response = (
@@ -404,9 +436,15 @@ class MCPClient:
 
         choice = choices[0]
 
+        sampling_response_message = choice.message.content or ""
+
+        sampling_events["sampling_response"] = sampling_response_message
+
+        self.tool_call_events[tool_call_id]["sampling_events"] = sampling_events
+
         return CreateMessageResult(
             role="assistant",
-            content=TextContent(type="text", text=choice.message.content or ""),
+            content=TextContent(type="text", text=sampling_response_message),
             model=self.settings.language_model,
             stopReason=choice.finish_reason,
         )
@@ -547,16 +585,20 @@ class MCPClient:
         return elicitation_response_message
 
     async def logging_handler(
-        self: "MCPClient", parameters: LoggingMessageNotificationParams
+        self: "MCPClient", tool_call_id: str, parameters: LoggingMessageNotificationParams
     ) -> None:
         """Handle logging requests from MCP tools.
 
         Parameters
         ----------
+        tool_call_id : str
+            unique identifier for the tool call
         parameters : LoggingMessageNotificationParams
             parameters for the logging request, including log level and message data
         """
-        LOGGER.log(MCP_LOG_LEVELS[parameters.level], parameters.data)
+        LOGGER.log(
+            MCP_LOG_LEVELS[parameters.level], parameters.data, extra={"tool_call_id": tool_call_id}
+        )
 
     async def execute_tool_call(  # noqa: PLR0911
         self: "MCPClient", tool_call_id: str, tool_name: str, arguments: dict
@@ -610,9 +652,9 @@ class MCPClient:
                 async with ClientSession(
                     read_stream,
                     write_stream,
-                    sampling_callback=self.sampling_handler,
+                    sampling_callback=functools.partial(self.sampling_handler, tool_call_id),
                     elicitation_callback=functools.partial(self.elicitation_handler, tool_call_id),
-                    logging_callback=self.logging_handler,
+                    logging_callback=functools.partial(self.logging_handler, tool_call_id),
                 ) as session:
                     await session.initialize()
 
@@ -822,11 +864,28 @@ class OpenAIOrchestrator:
                         for event_type, event_details in elicitation_events.items():
                             elicitation_information += f"\n{event_type}: {event_details}"
 
+                    if not (sampling_events := tool_call_events.get("sampling_events")):
+                        sampling_information = (
+                            f"No sampling occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                    else:
+                        sampling_information = (
+                            f"Sampling occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                        for event_type, event_details in sampling_events.items():
+                            sampling_information += f"\n{event_type}: {event_details}"
+
                     self.conversation_history.append(
                         ChatCompletionToolMessageParam(
-                            content=(
-                                f"{elicitation_information}\nTool Result\n{tool_execution_result}"
-                            ),
+                            content=f"""Tool Execution Details
+
+{elicitation_information}
+
+{sampling_information}
+
+Tool Result
+
+{tool_execution_result}""",
                             role="tool",
                             tool_call_id=tool_call_id,
                         )
