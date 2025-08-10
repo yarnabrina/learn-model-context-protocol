@@ -535,12 +535,14 @@ class MCPClient:
         LOGGER.log(MCP_LOG_LEVELS[parameters.level], parameters.data)
 
     async def execute_tool_call(  # noqa: PLR0911
-        self: "MCPClient", tool_name: str, arguments: dict
+        self: "MCPClient", tool_call_id: str, tool_name: str, arguments: dict
     ) -> str:
         """Execute a tool call on an MCP server.
 
         Parameters
         ----------
+        tool_call_id : str
+            unique identifier for the tool call
         tool_name : str
             name of the tool to call, formatted as "mcp-{server_name}-{tool_name}"
         arguments : dict
@@ -563,6 +565,7 @@ class MCPClient:
 
         LOGGER.debug(
             f"Calling tool {actual_tool_name} "
+            f"as part of tool call {tool_call_id} "
             f"from MCP server {server_name} ({server_url}) "
             f"with following parameters: {arguments}."
         )
@@ -600,6 +603,7 @@ class MCPClient:
 
         LOGGER.debug(
             f"Received response from tool {actual_tool_name} "
+            f"as part of tool call {tool_call_id} "
             f"of MCP server {server_name} ({server_url}) "
             f"as following: {tool_result}.\n"
         )
@@ -769,7 +773,7 @@ class OpenAIOrchestrator:
                     )
                 else:
                     tool_execution_result = await self.mcp_client.execute_tool_call(
-                        tool_call["function"]["name"], tool_arguments
+                        tool_call["id"], tool_call["function"]["name"], tool_arguments
                     )
 
                     self.conversation_history.append(
