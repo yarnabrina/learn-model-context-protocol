@@ -1,18 +1,16 @@
 """Provide functionality to raise a number to a power."""
 
-import typing
-
 import pydantic
 from mcp.server.fastmcp import Context
 
-from .arithmetic_operations import IdentityElements, multiply_numbers
+from .arithmetic_operations import IdentityElements, get_reciprocal, multiply_numbers
 
 
 class ExponentCorrection(pydantic.BaseModel):
     """Define supported type for exponent."""
 
-    corrected_exponent: typing.Annotated[int, pydantic.Field(ge=1)] = pydantic.Field(
-        description="natural number exponent for exponentiation operation"
+    corrected_exponent: int = pydantic.Field(
+        description="integer exponent for exponentiation operation"
     )
 
 
@@ -43,13 +41,19 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
     Raises
     ------
     NotImplementedError
-        if the exponent is not a positive integer
+        if the exponent is not an integer
+    NotImplementedError
+        if the base is zero and the exponent is a negative integer
+    ValueError
+        if the base is zero and the exponent is zero
+    ZeroDivisionError
+        if the base is zero and the exponent is a negative integer
     """
-    if not exponent.is_integer() or exponent < 0:
+    if not exponent.is_integer():
         await context.info(f"Starting elicitation to correct {exponent=}.")
 
         elicitation_result = await context.elicit(
-            f"Provided {exponent=} is not a natural number, and currently unsupported.",
+            f"Provided {exponent=} is not an integer, and currently unsupported.",
             ExponentCorrection,
         )
 
@@ -59,11 +63,20 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
             case "accept":
                 exponent = elicitation_result.data.corrected_exponent
             case "decline" | "cancel":
-                raise NotImplementedError("Only natural number powers are currently supported.")
+                raise NotImplementedError("Only integer powers are currently supported.")
+
+    if base == IdentityElements.ADDITIVE_IDENTITY == exponent:
+        raise ValueError("0 raised to the power 0 is undefined.")
+
+    if base == IdentityElements.ADDITIVE_IDENTITY and exponent < 0:
+        raise ZeroDivisionError("0 raised to a negative power is undefined.")
 
     power_result = IdentityElements.MULTIPLICATIVE_IDENTITY
-    for _ in range(int(exponent)):
+    for _ in range(int(abs(exponent))):
         power_result = multiply_numbers(power_result, base).product
+
+    if exponent < 0:
+        power_result = get_reciprocal(power_result).reciprocal
 
     return ExponentiationResult(power=power_result)
 
