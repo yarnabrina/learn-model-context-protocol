@@ -25,6 +25,7 @@ from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageParam,
     ChatCompletionSystemMessageParam,
+    ChatCompletionToolMessageParam,
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
 )
@@ -765,11 +766,9 @@ class OpenAIOrchestrator:
                     tool_arguments = json.loads(tool_call["function"]["arguments"])
                 except json.JSONDecodeError as error:
                     self.conversation_history.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tool_call["id"],
-                            "content": f"Error: {error}",
-                        }
+                        ChatCompletionToolMessageParam(
+                            content=f"Error: {error}", role="tool", tool_call_id=tool_call["id"]
+                        )
                     )
                 else:
                     tool_execution_result = await self.mcp_client.execute_tool_call(
@@ -777,11 +776,11 @@ class OpenAIOrchestrator:
                     )
 
                     self.conversation_history.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tool_call["id"],
-                            "content": tool_execution_result,
-                        }
+                        ChatCompletionToolMessageParam(
+                            content=tool_execution_result,
+                            role="tool",
+                            tool_call_id=tool_call["id"],
+                        )
                     )
 
             assistant_message = ""
