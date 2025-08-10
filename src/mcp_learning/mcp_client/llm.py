@@ -2,6 +2,7 @@
 
 import collections.abc
 import functools
+import logging
 
 import openai
 import pydantic_settings
@@ -21,6 +22,8 @@ from .configurations import (
     OpenAIConfigurations,
 )
 
+LOGGER = logging.getLogger(__name__)
+
 
 class OpenAIClient:
     """Define client for OpenAI API interactions.
@@ -30,7 +33,7 @@ class OpenAIClient:
     settings : Configurations
         language model configurations containing API keys and customisations
 
-    Properties
+    Attributes
     ----------
     openai_client : openai.AsyncOpenAI
         OpenAI client instance configured based on the provided settings
@@ -126,6 +129,8 @@ class OpenAIClient:
             openai_inputs.update(
                 {"parallel_tool_calls": True, "tool_choice": "auto", "tools": tools}
             )
+
+        LOGGER.debug(f"Formulated OpenAI inputs: {openai_inputs}")
 
         return openai_inputs
 

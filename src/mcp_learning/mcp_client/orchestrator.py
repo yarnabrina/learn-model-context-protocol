@@ -2,8 +2,10 @@
 
 import collections.abc
 import enum
+import functools
 import http
 import json
+import logging
 
 import pydantic
 from mcp import ClientSession
@@ -13,23 +15,43 @@ from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
     CreateMessageRequestParams,
     CreateMessageResult,
+    ElicitRequestParams,
+    ElicitResult,
     ErrorData,
+    LoggingMessageNotificationParams,
     TextContent,
     ToolAnnotations,
 )
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageParam,
-    ChatCompletionMessageToolCallParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionToolMessageParam,
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
 )
-from openai.types.chat.chat_completion_message_tool_call_param import Function
+from openai.types.chat.chat_completion_message_function_tool_call_param import (
+    ChatCompletionMessageFunctionToolCallParam,
+    Function,
+)
 from openai.types.shared_params import FunctionDefinition
 
 from .configurations import Configurations
-from .console import internal_info
+from .console import bot_response, user_prompt
 from .llm import OpenAIClient
+
+LOGGER = logging.getLogger(__name__)
+
+MCP_LOG_LEVELS = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "notice": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+    "alert": logging.CRITICAL,
+    "emergency": logging.CRITICAL,
+}
 
 
 class MCPTool(pydantic.BaseModel):
@@ -45,7 +67,7 @@ class MCPTool(pydantic.BaseModel):
 
 
 class Status(enum.StrEnum):
-    """Define the status of an MCP server addition or removal operation."""
+    """Define the status of an MCP server operation."""
 
     SUCCESS = "success"
     FAILURE = "failure"
@@ -57,6 +79,49 @@ class OpenAIFunctionDefinition(pydantic.BaseModel):
     name: str
     description: str | None = None
     parameters: dict | None = None
+
+
+ELICITATION_REQUEST_PROMPT = """You are an elicitation assistant.
+
+- Your task is to help the user provide the required information for a tool call.
+- The user has provided inputs that does not match the expected schema.
+- The MCP server has requested you to elicit the missing information.
+- You should inform user about the response and requested missing information from the MCP server.
+- Then you should create a friendly and clear prompt for the user to respond to.
+"""
+
+
+ELICITATION_RESPONSE_PROMPT = """You are an elicitation assistant.
+
+- Your task is to help the parse the user response to elicitation request.
+- The user provided inputs that does not match the expected schema.
+- The MCP server requested you to elicit the missing information.
+- You informed user about the response and requested missing information from the MCP server.
+- Based on that, user had the option to accept, decline or cancel the elicitation.
+- If the user accepts, you should parse their response to match the expected schema.
+- If user explicitly declines or dismisses, you should parse accordingly.
+- Return only a JSON object containing the extracted fields, with correct types and values.
+- Do not include any explanation or extra text, including backticks or markup.
+
+If cancelled, return following JSON object exactly:
+
+{
+    "action": "cancel"
+}
+
+If declined, return JSON object with following structure:
+
+{
+    "action": "decline"
+}
+
+If accepted, return a JSON object with the following structure:
+
+{
+    "action": "accept",
+    "content": "object with MCP server requested schema"
+}
+"""
 
 
 class MCPClient:
@@ -75,6 +140,8 @@ class MCPClient:
         mapping of MCP server names to their available tools
     openai_client : OpenAIClient
         client for interacting with OpenAI API for tool calls
+    tool_call_events : dict[str, dict]
+        mapping of tool call identifiers to their events
     """
 
     def __init__(self: "MCPClient", settings: Configurations) -> None:
@@ -85,7 +152,11 @@ class MCPClient:
 
         self.openai_client = OpenAIClient(self.settings)
 
-    async def add_mcp_server(self: "MCPClient", server_name: str, server_url: str) -> list[str]:
+        self.tool_call_events: dict[str, dict] = {}
+
+    async def add_mcp_server(
+        self: "MCPClient", server_name: str, server_url: str
+    ) -> tuple[Status, list[str]]:
         """Add a new MCP server and retrieve its available tools.
 
         Parameters
@@ -97,6 +168,8 @@ class MCPClient:
 
         Returns
         -------
+        Status
+            status of the addition operation
         list[str]
             list of tool names available on the added MCP server
         """
@@ -112,21 +185,18 @@ class MCPClient:
                     await session.initialize()
 
                     server_tools = await session.list_tools()
-        except ExceptionGroup as errors_group:
-            internal_info(f"Failed to add MCP server {server_name} at {server_url}.\n")
-
-            for error in errors_group.exceptions:
-                internal_info(f"Sub-exception: {error}.\n")
+        except ExceptionGroup:
+            LOGGER.exception(f"Failed to add MCP server {server_name} at {server_url}.")
 
             _ = self.mcp_servers.pop(server_name)
 
-            return []
-        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-            internal_info(f"Failed to add MCP server {server_name} at {server_url}: {error}.\n")
+            return Status.FAILURE, []
+        except Exception:  # pylint: disable=broad-exception-caught
+            LOGGER.exception(f"Failed to add MCP server {server_name} at {server_url}.")
 
             _ = self.mcp_servers.pop(server_name)
 
-            return []
+            return Status.FAILURE, []
 
         processed_server_tools = [
             MCPTool(
@@ -142,7 +212,7 @@ class MCPClient:
         ]
         self.mcp_server_tools[server_name] = processed_server_tools
 
-        return [tool.display_name for tool in processed_server_tools]
+        return Status.SUCCESS, [tool.display_name for tool in processed_server_tools]
 
     def list_mcp_servers(self: "MCPClient") -> dict[str, str]:
         """List all added MCP servers.
@@ -170,14 +240,16 @@ class MCPClient:
         try:
             _ = self.mcp_servers.pop(server_name)
             _ = self.mcp_server_tools.pop(server_name)
-        except KeyError as error:
-            internal_info(f"Failed to remove MCP server {server_name}: {error}.\n")
+        except KeyError:
+            LOGGER.exception(f"Failed to remove MCP server {server_name}.")
 
             return Status.FAILURE
 
         return Status.SUCCESS
 
-    def list_mcp_server_tools(self: "MCPClient", server_name: str) -> dict[str, str]:
+    def list_mcp_server_tools(
+        self: "MCPClient", server_name: str
+    ) -> tuple[Status, dict[str, str]]:
         """List all tools available on a specific MCP server.
 
         Parameters
@@ -187,21 +259,23 @@ class MCPClient:
 
         Returns
         -------
+        Status
+            status of the listing operation
         dict[str, str]
             mapping of tool names to their display names for the specified MCP server
         """
         try:
             server_tools = self.mcp_server_tools[server_name]
-        except KeyError as error:
-            internal_info(f"Failed to remove MCP server {server_name}: {error}.\n")
+        except KeyError:
+            LOGGER.exception(f"MCP server {server_name} does not exist.")
 
-            return {}
+            return Status.FAILURE, {}
 
-        return {tool.name: tool.display_name for tool in server_tools}
+        return Status.SUCCESS, {tool.name: tool.display_name for tool in server_tools}
 
     def describe_mcp_server_tool(
         self: "MCPClient", server_name: str, tool_name: str
-    ) -> MCPTool | None:
+    ) -> tuple[Status, MCPTool | None]:
         """Describe a specific tool available on an MCP server.
 
         Parameters
@@ -213,21 +287,25 @@ class MCPClient:
 
         Returns
         -------
+        Status
+            status of the description operation
         MCPTool | None
             tool details if found, None otherwise
         """
         try:
             server_tools = self.mcp_server_tools[server_name]
-        except KeyError as error:
-            internal_info(f"MCP server {server_name} does not exist: {error}.\n")
+        except KeyError:
+            LOGGER.exception(f"MCP server {server_name} does not exist.")
 
-            return
+            return Status.FAILURE, None
 
         for tool in server_tools:
             if tool.name == tool_name:
-                return tool
+                return Status.SUCCESS, tool
 
-        internal_info(f"Tool {tool_name} does not exist in MCP server {server_name}.\n")
+        LOGGER.error(f"Tool {tool_name} does not exist in MCP server {server_name}.")
+
+        return Status.FAILURE, None
 
     async def get_all_openai_functions(self: "MCPClient") -> list[ChatCompletionToolParam]:
         """Get all MCP tools as OpenAI API compatible function definitions.
@@ -251,12 +329,17 @@ class MCPClient:
         ]
 
     async def sampling_handler(
-        self: "MCPClient", context: RequestContext, parameters: CreateMessageRequestParams
+        self: "MCPClient",
+        tool_call_id: str,
+        context: RequestContext,
+        parameters: CreateMessageRequestParams,
     ) -> CreateMessageResult | ErrorData:
         """Handle sampling requests for OpenAI API calls with MCP tools.
 
         Parameters
         ----------
+        tool_call_id : str
+            unique identifier for the tool call
         context : RequestContext
             request context containing information about the sampling request
         parameters : CreateMessageRequestParams
@@ -271,7 +354,19 @@ class MCPClient:
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
 
-        internal_info(f"Processing sampling request: {parameters}.\n")
+        sampling_events: dict = {
+            "server_messages": [
+                (
+                    message.content.text
+                    if isinstance(message.content, TextContent)
+                    else str(message.content)
+                )
+                for message in parameters.messages
+            ]
+        }
+
+        if parameters.systemPrompt:
+            sampling_events["server_instruction"] = parameters.systemPrompt
 
         openai_customisations: dict = {"max_completion_tokens": parameters.maxTokens}
 
@@ -282,22 +377,35 @@ class MCPClient:
             openai_customisations["stop"] = stop_sequences
 
         messages = [
-            ChatCompletionUserMessageParam(
-                content=(
-                    message.content.text
-                    if isinstance(message.content, TextContent)
-                    else str(message.content)
-                ),
-                role="user",
-            )
-            for message in parameters.messages
+            ChatCompletionUserMessageParam(content=message, role="user")
+            for message in sampling_events["server_messages"]
         ]
 
         available_openai_tools = await self.get_all_openai_functions()
 
         # TODO (@yarnabrina): find out to use parameters.includeContext
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/5
-        filtered_openai_tools = available_openai_tools
+        match parameters.includeContext:
+            case "none":
+                filtered_openai_tools = []
+            case "thisServer":
+                filtered_openai_tools = [
+                    tool
+                    for tool in available_openai_tools
+                    if tool["function"]["name"].endswith(
+                        self.tool_call_events[tool_call_id]["tool_name"]
+                    )
+                ]
+            case "allServers":
+                filtered_openai_tools = available_openai_tools
+            case None:
+                filtered_openai_tools = [
+                    tool
+                    for tool in available_openai_tools
+                    if not tool["function"]["name"].endswith(
+                        self.tool_call_events[tool_call_id]["tool_name"]
+                    )
+                ]
 
         try:
             non_streaming_openai_response = (
@@ -309,16 +417,18 @@ class MCPClient:
                 )
             )
         except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-            internal_info(f"Failed to get OpenAI response: {error}.\n")
+            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
 
             return ErrorData(
                 code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                 message=f"Failed to get OpenAI response: {error}.",
             )
 
-        internal_info(f"Received response from OpenAI: {non_streaming_openai_response}.\n")
+        LOGGER.debug(f"Received response from OpenAI: {non_streaming_openai_response}.")
 
         if not (choices := non_streaming_openai_response.choices):
+            LOGGER.warning("Received empty response from OpenAI.")
+
             return ErrorData(
                 code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                 message="No choices returned from OpenAI API.",
@@ -326,20 +436,179 @@ class MCPClient:
 
         choice = choices[0]
 
+        sampling_response_message = choice.message.content or ""
+
+        sampling_events["sampling_response"] = sampling_response_message
+
+        self.tool_call_events[tool_call_id]["sampling_events"] = sampling_events
+
         return CreateMessageResult(
             role="assistant",
-            content=TextContent(type="text", text=choice.message.content or ""),
+            content=TextContent(type="text", text=sampling_response_message),
             model=self.settings.language_model,
             stopReason=choice.finish_reason,
         )
 
+    async def elicitation_handler(
+        self: "MCPClient",
+        tool_call_id: str,
+        context: RequestContext,
+        parameters: ElicitRequestParams,
+    ) -> ElicitResult | ErrorData:
+        """Handle elicitation requests for MCP tools.
+
+        Parameters
+        ----------
+        tool_call_id : str
+            unique identifier for the tool call
+        context : RequestContext
+            request context containing information about the elicitation request
+        parameters : ElicitRequestParams
+            parameters for the elicitation request, including message and requested schema
+
+        Returns
+        -------
+        ElicitResult | ErrorData
+            result of the elicitation request, either an elicitation result or an error data
+        """
+        # TODO (@yarnabrina): find out to use context
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
+        del context
+
+        elicitation_events = {
+            "server_message": parameters.message,
+            "requested_schema": parameters.requestedSchema,
+        }
+
+        elicitation_request_messages = [
+            ChatCompletionSystemMessageParam(content=ELICITATION_REQUEST_PROMPT, role="system"),
+            ChatCompletionAssistantMessageParam(
+                role="assistant",
+                content="\n".join(
+                    [
+                        f"MCP Server Message: {parameters.message}",
+                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
+                    ]
+                ),
+            ),
+        ]
+
+        try:
+            elicitation_request_openai_response = (
+                await self.openai_client.get_non_streaming_openai_response(
+                    elicitation_request_messages
+                )
+            )
+        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message=f"Failed to get OpenAI response: {error}.",
+            )
+
+        LOGGER.debug(f"Received response from OpenAI: {elicitation_request_openai_response}.")
+
+        if not (choices := elicitation_request_openai_response.choices):
+            LOGGER.warning("Received empty response from OpenAI.")
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message="No choices returned from OpenAI API.",
+            )
+
+        elicitation_request_message = choices[0].message.content or ""
+
+        elicitation_events["elicitation_prompt"] = elicitation_request_message
+
+        bot_response(elicitation_request_message)
+
+        user_input = user_prompt()
+
+        elicitation_events["user_input"] = user_input
+
+        elicitation_response_messages = [
+            ChatCompletionSystemMessageParam(content=ELICITATION_RESPONSE_PROMPT, role="system"),
+            ChatCompletionAssistantMessageParam(
+                role="assistant",
+                content="\n".join(
+                    [
+                        f"MCP Server Message: {parameters.message}",
+                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
+                    ]
+                ),
+            ),
+            ChatCompletionAssistantMessageParam(
+                role="assistant", content=elicitation_request_message
+            ),
+            ChatCompletionUserMessageParam(content=user_input, role="user"),
+        ]
+
+        try:
+            elicitation_response_openai_response = (
+                await self.openai_client.get_non_streaming_openai_response(
+                    elicitation_response_messages
+                )
+            )
+        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message=f"Failed to get OpenAI response: {error}.",
+            )
+
+        LOGGER.debug(f"Received response from OpenAI: {elicitation_response_openai_response}.")
+
+        if not (choices := elicitation_response_openai_response.choices):
+            LOGGER.warning("Received empty response from OpenAI.")
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message="No choices returned from OpenAI API.",
+            )
+
+        try:
+            elicitation_response_message = json.loads(choices[0].message.content or "{}")
+        except json.JSONDecodeError as error:
+            LOGGER.warning("Failed to parse elicitation response as JSON.", exc_info=True)
+
+            return ErrorData(
+                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                message=f"Failed to parse elicitation response: {error}.",
+            )
+
+        elicitation_events["elicitation_correction"] = elicitation_response_message
+
+        self.tool_call_events[tool_call_id]["elicitation_events"] = elicitation_events
+
+        return elicitation_response_message
+
+    async def logging_handler(
+        self: "MCPClient", tool_call_id: str, parameters: LoggingMessageNotificationParams
+    ) -> None:
+        """Handle logging requests from MCP tools.
+
+        Parameters
+        ----------
+        tool_call_id : str
+            unique identifier for the tool call
+        parameters : LoggingMessageNotificationParams
+            parameters for the logging request, including log level and message data
+        """
+        LOGGER.log(
+            MCP_LOG_LEVELS[parameters.level], parameters.data, extra={"tool_call_id": tool_call_id}
+        )
+
     async def execute_tool_call(  # noqa: PLR0911
-        self: "MCPClient", tool_name: str, arguments: dict
+        self: "MCPClient", tool_call_id: str, tool_name: str, arguments: dict
     ) -> str:
         """Execute a tool call on an MCP server.
 
         Parameters
         ----------
+        tool_call_id : str
+            unique identifier for the tool call
         tool_name : str
             name of the tool to call, formatted as "mcp-{server_name}-{tool_name}"
         arguments : dict
@@ -360,10 +629,18 @@ class MCPClient:
 
         server_url = self.mcp_servers[server_name]
 
-        internal_info(
+        self.tool_call_events[tool_call_id] = {
+            "server_name": server_name,
+            "server_url": server_url,
+            "tool_name": actual_tool_name,
+            "arguments": arguments,
+        }
+
+        LOGGER.debug(
             f"Calling tool {actual_tool_name} "
+            f"as part of tool call {tool_call_id} "
             f"from MCP server {server_name} ({server_url}) "
-            f"with following parameters: {arguments}.\n"
+            f"with following parameters: {arguments}."
         )
 
         try:
@@ -373,27 +650,33 @@ class MCPClient:
                 _,
             ):
                 async with ClientSession(
-                    read_stream, write_stream, sampling_callback=self.sampling_handler
+                    read_stream,
+                    write_stream,
+                    sampling_callback=functools.partial(self.sampling_handler, tool_call_id),
+                    elicitation_callback=functools.partial(self.elicitation_handler, tool_call_id),
+                    logging_callback=functools.partial(self.logging_handler, tool_call_id),
                 ) as session:
                     await session.initialize()
 
                     tool_result = await session.call_tool(actual_tool_name, arguments=arguments)
-        except ExceptionGroup as errors_group:
-            internal_info(f"Failed tool call to {actual_tool_name} of MCP server {server_name}.\n")
-
-            for error in errors_group.exceptions:
-                internal_info(f"Sub-exception: {error}.\n")
+        except ExceptionGroup:
+            LOGGER.warning(
+                f"Failed tool call to {actual_tool_name} of MCP server {server_name}.",
+                exc_info=True,
+            )
 
             return json.dumps({"error": f"Failed tool call to {actual_tool_name}."})
         except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-            internal_info(
-                f"Failed tool call to {actual_tool_name} of MCP server {server_name}: {error}.\n"
+            LOGGER.warning(
+                f"Failed tool call to {actual_tool_name} of MCP server {server_name}.",
+                exc_info=True,
             )
 
             return json.dumps({"error": f"Failed tool call to {actual_tool_name}: {error}."})
 
-        internal_info(
+        LOGGER.debug(
             f"Received response from tool {actual_tool_name} "
+            f"as part of tool call {tool_call_id} "
             f"of MCP server {server_name} ({server_url}) "
             f"as following: {tool_result}.\n"
         )
@@ -402,6 +685,8 @@ class MCPClient:
             error_message = "".join(
                 content.text for content in tool_result.content if isinstance(content, TextContent)
             )
+
+            LOGGER.warning(f"Failed tool call to {tool_name=} with {arguments=}: {error_message}.")
 
             return json.dumps(
                 {
@@ -422,10 +707,12 @@ class OpenAIOrchestrator:
 
     Parameters
     ----------
-    mcp_client : MCPClient
-        client for managing MCP servers and their tools
     settings : Configurations
         language model configurations containing API keys and customisations
+    system_prompt : str | None, optional
+        initial system prompt to set the context, by default None
+    mcp_client : MCPClient, optional
+        client for managing MCP servers and their tools, by default None
 
     Attributes
     ----------
@@ -437,13 +724,13 @@ class OpenAIOrchestrator:
 
     def __init__(
         self: "OpenAIOrchestrator",
-        mcp_client: MCPClient,
         settings: Configurations,
         system_prompt: str | None = None,
+        mcp_client: MCPClient | None = None,
     ) -> None:
-        self.mcp_client = mcp_client
         self.settings = settings
         self.system_prompt = system_prompt
+        self.mcp_client = mcp_client
 
         self.openai_client = OpenAIClient(self.settings)
         self.conversation_history: list[ChatCompletionMessageParam] = []
@@ -462,7 +749,9 @@ class OpenAIOrchestrator:
         list[dict]
             tool calls from the OpenAI API response
         """
-        available_openai_tools = await self.mcp_client.get_all_openai_functions()
+        available_openai_tools = (
+            None if self.mcp_client is None else await self.mcp_client.get_all_openai_functions()
+        )
 
         chat_completion = self.openai_client.get_streaming_openai_response(
             self.conversation_history,
@@ -470,7 +759,7 @@ class OpenAIOrchestrator:
             tools=available_openai_tools,
         )
 
-        tool_calls: dict[int, ChatCompletionMessageToolCallParam] = {}
+        tool_calls: dict[int, ChatCompletionMessageFunctionToolCallParam] = {}
         async for chunk in chat_completion:
             if not chunk.choices:
                 continue
@@ -481,7 +770,7 @@ class OpenAIOrchestrator:
                 index = tool_call.index
 
                 if index not in tool_calls:
-                    tool_calls[index] = ChatCompletionMessageToolCallParam(
+                    tool_calls[index] = ChatCompletionMessageFunctionToolCallParam(
                         id=tool_call.id,
                         function=Function(arguments="", name=tool_call.function.name),
                         type=tool_call.type,
@@ -499,7 +788,7 @@ class OpenAIOrchestrator:
 
     async def process_user_message(  # noqa: C901, PLR0912
         self: "OpenAIOrchestrator", user_message: str
-    ) -> collections.abc.AsyncGenerator[tuple[str, bool]]:
+    ) -> collections.abc.AsyncGenerator[str]:
         """Process a user message and generate a response using OpenAI API.
 
         Parameters
@@ -511,12 +800,9 @@ class OpenAIOrchestrator:
         ------
         str
             token content from the OpenAI API response
-        bool
-            whether the token is the initial token of the response
         """
         self.conversation_history.append({"role": "user", "content": user_message})
 
-        initial_token = True
         assistant_message = ""
         async for (
             finish_reason_delta,
@@ -526,22 +812,17 @@ class OpenAIOrchestrator:
             if assistant_message_token:
                 assistant_message += assistant_message_token
 
-                if initial_token:
-                    initial_token = False
-
-                    yield assistant_message_token, True
-                else:
-                    yield assistant_message_token, False
+                yield assistant_message_token
 
             if finish_reason_delta:
                 finish_reason = finish_reason_delta
                 assistant_tool_calls = assistant_tool_calls_delta
 
-                yield "\n", False
+                yield "\n"
 
                 break
         else:
-            yield "\n", False
+            yield "\n"
 
         while finish_reason == "tool_calls":
             self.conversation_history.append(
@@ -550,33 +831,66 @@ class OpenAIOrchestrator:
                 )
             )
 
-            internal_info(f"Identified tool calls: {assistant_tool_calls}.\n")
+            LOGGER.debug(f"Identified tool calls: {assistant_tool_calls}.")
 
             for tool_call in assistant_tool_calls:
+                tool_call_id = tool_call["id"]
+                tool_name = tool_call["function"]["name"]
+                tool_arguments = tool_call["function"]["arguments"]
+
                 try:
-                    tool_arguments = json.loads(tool_call["function"]["arguments"])
+                    parsed_tool_arguments = json.loads(tool_arguments)
                 except json.JSONDecodeError as error:
                     self.conversation_history.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tool_call["id"],
-                            "content": f"Error: {error}",
-                        }
+                        ChatCompletionToolMessageParam(
+                            content=f"Error: {error}", role="tool", tool_call_id=tool_call_id
+                        )
                     )
                 else:
                     tool_execution_result = await self.mcp_client.execute_tool_call(
-                        tool_call["function"]["name"], tool_arguments
+                        tool_call_id, tool_name, parsed_tool_arguments
                     )
+
+                    tool_call_events = self.mcp_client.tool_call_events[tool_call_id]
+
+                    if not (elicitation_events := tool_call_events.get("elicitation_events")):
+                        elicitation_information = (
+                            f"No elicitation occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                    else:
+                        elicitation_information = (
+                            f"Elicitation occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                        for event_type, event_details in elicitation_events.items():
+                            elicitation_information += f"\n{event_type}: {event_details}"
+
+                    if not (sampling_events := tool_call_events.get("sampling_events")):
+                        sampling_information = (
+                            f"No sampling occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                    else:
+                        sampling_information = (
+                            f"Sampling occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                        for event_type, event_details in sampling_events.items():
+                            sampling_information += f"\n{event_type}: {event_details}"
 
                     self.conversation_history.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tool_call["id"],
-                            "content": tool_execution_result,
-                        }
+                        ChatCompletionToolMessageParam(
+                            content=f"""Tool Execution Details
+
+{elicitation_information}
+
+{sampling_information}
+
+Tool Result
+
+{tool_execution_result}""",
+                            role="tool",
+                            tool_call_id=tool_call_id,
+                        )
                     )
 
-            initial_token = True
             assistant_message = ""
             async for (
                 finish_reason_delta,
@@ -586,21 +900,16 @@ class OpenAIOrchestrator:
                 if assistant_message_token:
                     assistant_message += assistant_message_token
 
-                    if initial_token:
-                        initial_token = False
-
-                        yield assistant_message_token, True
-                    else:
-                        yield assistant_message_token, False
+                    yield assistant_message_token
 
                 if finish_reason_delta:
                     finish_reason = finish_reason_delta
                     assistant_tool_calls = assistant_tool_calls_delta
 
-                    yield "\n", False
+                    yield "\n"
 
                     break
             else:
-                yield "\n", False
+                yield "\n"
 
         self.conversation_history.append({"role": "assistant", "content": assistant_message})

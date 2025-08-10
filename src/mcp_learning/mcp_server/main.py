@@ -12,6 +12,7 @@ from .arithmetic_operations import (
     subtract_numbers,
 )
 from .configurations import Configurations
+from .exponentiation import exponentiate
 from .simplification import evaluate_arithmetic_expression, parse_arithmetic_expression
 
 
@@ -95,6 +96,15 @@ def main() -> None:
             title="Arithmetic Expression Evaluator", readOnlyHint=True, openWorldHint=False
         ),
         structured_output=False,
+    )
+    mcp_server.add_tool(
+        exponentiate,
+        title="Power",
+        description="Raise a base to an exponent",
+        annotations=ToolAnnotations(
+            title="Exponentiation", readOnlyHint=True, openWorldHint=False
+        ),
+        structured_output=True,
     )
 
     mcp_server.run(transport="streamable-http")

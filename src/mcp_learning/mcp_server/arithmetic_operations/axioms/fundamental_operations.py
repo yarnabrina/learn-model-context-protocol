@@ -61,20 +61,20 @@ class MultiplicationResult(pydantic.BaseModel):
 
 
 @pydantic.validate_call(validate_return=True)
-def multiply_numbers(left_multiplicand: float, right_multiplicand: float) -> MultiplicationResult:
+def multiply_numbers(multiplicand: float, multiplier: float) -> MultiplicationResult:
     """Perform multiplication of two real numbers.
 
     Parameters
     ----------
-    left_multiplicand : float
-        first number to be multiplied
-    right_multiplicand : float
-        second number to be multiplied
+    multiplicand : float
+        number to be multiplied
+    multiplier : float
+        number by which to multiply
 
     Returns
     -------
     MultiplicationResult
-        product of two `left_multiplicand` and `right_multiplicand`
+        product of `multiplicand` and `multiplier`
 
     Examples
     --------
@@ -90,7 +90,7 @@ def multiply_numbers(left_multiplicand: float, right_multiplicand: float) -> Mul
         >>> multiply_numbers(-1, -2)
         MultiplicationResult(product=2.0)
     """
-    product_of_two_numbers = left_multiplicand * right_multiplicand
+    product_of_two_numbers = multiplicand * multiplier
 
     return MultiplicationResult(product=product_of_two_numbers)
 

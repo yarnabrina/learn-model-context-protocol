@@ -1,4 +1,4 @@
-"""Provide a function to parse arithmetic expressions from text."""
+"""Provide functionality to parse and solve arithmetic expressions from natural language."""
 
 import enum
 
@@ -48,6 +48,7 @@ Return only the postfix arithmetic expression without any additional text or exp
         ],
         max_tokens=2048,
         system_prompt=instruction,
+        include_context="none",
         temperature=0,
     )
 
@@ -74,7 +75,13 @@ class SimpleArithmeticOperator(enum.StrEnum):
 
 
 class InvalidOperatorError(Exception):
-    """Raised when unsupported operators are encountered."""
+    """Raised when unsupported operators are encountered.
+
+    Parameters
+    ----------
+    operator : str
+        the unsupported operator that caused the error
+    """
 
     def __init__(self: "InvalidOperatorError", operator: str) -> None:
         super().__init__(f"Unsupported operator encountered: {operator=}.")
@@ -126,4 +133,9 @@ async def evaluate_arithmetic_expression(expression: str) -> float:
     return stack.pop()
 
 
-__all__ = ["evaluate_arithmetic_expression", "parse_arithmetic_expression"]
+__all__ = [
+    "InvalidOperatorError",
+    "SimpleArithmeticOperator",
+    "evaluate_arithmetic_expression",
+    "parse_arithmetic_expression",
+]

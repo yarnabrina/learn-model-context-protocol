@@ -21,7 +21,7 @@ class LogLevel(enum.StrEnum):
 class ServerConfigurations(pydantic_settings.BaseSettings):
     """Define configurations for the MCP server."""
 
-    debug: bool = False
+    debug: pydantic_settings.CliImplicitFlag[bool] = False
     log_level: LogLevel = LogLevel.INFO
 
 
@@ -36,8 +36,8 @@ class StreamableHttpConfigurations(pydantic_settings.BaseSettings):
     """Define streamable HTTP configurations for the MCP server."""
 
     streamable_http_path: str = "/mcp"
-    json_response: bool = False
-    stateless_http: bool = False
+    json_response: pydantic_settings.CliImplicitFlag[bool] = False
+    stateless_http: pydantic_settings.CliImplicitFlag[bool] = False
 
 
 class Configurations(ServerConfigurations, HttpConfigurations, StreamableHttpConfigurations):
