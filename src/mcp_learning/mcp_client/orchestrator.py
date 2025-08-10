@@ -2,6 +2,7 @@
 
 import collections.abc
 import enum
+import functools
 import http
 import json
 import logging
@@ -139,6 +140,8 @@ class MCPClient:
         mapping of MCP server names to their available tools
     openai_client : OpenAIClient
         client for interacting with OpenAI API for tool calls
+    tool_call_events : dict[str, dict]
+        mapping of tool call identifiers to their events
     """
 
     def __init__(self: "MCPClient", settings: Configurations) -> None:
@@ -148,6 +151,8 @@ class MCPClient:
         self.mcp_server_tools: dict[str, list[MCPTool]] = {}
 
         self.openai_client = OpenAIClient(self.settings)
+
+        self.tool_call_events: dict[str, dict] = {}
 
     async def add_mcp_server(
         self: "MCPClient", server_name: str, server_url: str
@@ -407,12 +412,17 @@ class MCPClient:
         )
 
     async def elicitation_handler(
-        self: "MCPClient", context: RequestContext, parameters: ElicitRequestParams
+        self: "MCPClient",
+        tool_call_id: str,
+        context: RequestContext,
+        parameters: ElicitRequestParams,
     ) -> ElicitResult | ErrorData:
         """Handle elicitation requests for MCP tools.
 
         Parameters
         ----------
+        tool_call_id : str
+            unique identifier for the tool call
         context : RequestContext
             request context containing information about the elicitation request
         parameters : ElicitRequestParams
@@ -426,6 +436,11 @@ class MCPClient:
         # TODO (@yarnabrina): find out to use context
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
+
+        elicitation_events = {
+            "server_message": parameters.message,
+            "requested_schema": parameters.requestedSchema,
+        }
 
         elicitation_request_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_REQUEST_PROMPT, role="system"),
@@ -466,9 +481,13 @@ class MCPClient:
 
         elicitation_request_message = choices[0].message.content or ""
 
+        elicitation_events["elicitation_prompt"] = elicitation_request_message
+
         bot_response(elicitation_request_message)
 
         user_input = user_prompt()
+
+        elicitation_events["user_input"] = user_input
 
         elicitation_response_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_RESPONSE_PROMPT, role="system"),
@@ -521,6 +540,10 @@ class MCPClient:
                 message=f"Failed to parse elicitation response: {error}.",
             )
 
+        elicitation_events["elicitation_correction"] = elicitation_response_message
+
+        self.tool_call_events[tool_call_id]["elicitation_events"] = elicitation_events
+
         return elicitation_response_message
 
     async def logging_handler(
@@ -564,6 +587,13 @@ class MCPClient:
 
         server_url = self.mcp_servers[server_name]
 
+        self.tool_call_events[tool_call_id] = {
+            "server_name": server_name,
+            "server_url": server_url,
+            "tool_name": actual_tool_name,
+            "arguments": arguments,
+        }
+
         LOGGER.debug(
             f"Calling tool {actual_tool_name} "
             f"as part of tool call {tool_call_id} "
@@ -581,7 +611,7 @@ class MCPClient:
                     read_stream,
                     write_stream,
                     sampling_callback=self.sampling_handler,
-                    elicitation_callback=self.elicitation_handler,
+                    elicitation_callback=functools.partial(self.elicitation_handler, tool_call_id),
                     logging_callback=self.logging_handler,
                 ) as session:
                     await session.initialize()
@@ -714,7 +744,7 @@ class OpenAIOrchestrator:
 
             yield finish_reason, None, [tool_call for _, tool_call in tool_calls.items()]
 
-    async def process_user_message(  # noqa: C901
+    async def process_user_message(  # noqa: C901, PLR0912
         self: "OpenAIOrchestrator", user_message: str
     ) -> collections.abc.AsyncGenerator[str]:
         """Process a user message and generate a response using OpenAI API.
@@ -762,24 +792,43 @@ class OpenAIOrchestrator:
             LOGGER.debug(f"Identified tool calls: {assistant_tool_calls}.")
 
             for tool_call in assistant_tool_calls:
+                tool_call_id = tool_call["id"]
+                tool_name = tool_call["function"]["name"]
+                tool_arguments = tool_call["function"]["arguments"]
+
                 try:
-                    tool_arguments = json.loads(tool_call["function"]["arguments"])
+                    parsed_tool_arguments = json.loads(tool_arguments)
                 except json.JSONDecodeError as error:
                     self.conversation_history.append(
                         ChatCompletionToolMessageParam(
-                            content=f"Error: {error}", role="tool", tool_call_id=tool_call["id"]
+                            content=f"Error: {error}", role="tool", tool_call_id=tool_call_id
                         )
                     )
                 else:
                     tool_execution_result = await self.mcp_client.execute_tool_call(
-                        tool_call["id"], tool_call["function"]["name"], tool_arguments
+                        tool_call_id, tool_name, parsed_tool_arguments
                     )
+
+                    tool_call_events = self.mcp_client.tool_call_events[tool_call_id]
+
+                    if not (elicitation_events := tool_call_events.get("elicitation_events")):
+                        elicitation_information = (
+                            f"No elicitation occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                    else:
+                        elicitation_information = (
+                            f"Elicitation occurred for {tool_call_id=} to {tool_name=}."
+                        )
+                        for event_type, event_details in elicitation_events.items():
+                            elicitation_information += f"\n{event_type}: {event_details}"
 
                     self.conversation_history.append(
                         ChatCompletionToolMessageParam(
-                            content=tool_execution_result,
+                            content=(
+                                f"{elicitation_information}\nTool Result\n{tool_execution_result}"
+                            ),
                             role="tool",
-                            tool_call_id=tool_call["id"],
+                            tool_call_id=tool_call_id,
                         )
                     )
 
