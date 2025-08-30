@@ -601,6 +601,34 @@ class MCPClient:
             MCP_LOG_LEVELS[parameters.level], parameters.data, extra={"tool_call_id": tool_call_id}
         )
 
+    @staticmethod
+    async def progress_handler(
+        tool_call_id: str, progress: float, total: float | None = None, message: str | None = None
+    ) -> None:
+        """Report progress for MCP tools.
+
+        Parameters
+        ----------
+        tool_call_id : str
+            unique identifier for the tool call
+        progress : float
+            current progress value
+        total : float | None, optional
+            total progress value, by default None
+        message : str | None, optional
+            optional message to accompany the progress report, by default None
+        """
+        completion = f"{progress}"
+        if total is not None:
+            completion += f"/{total}"
+
+        progress_message = f"Progress of {tool_call_id}: {completion}."
+
+        if message:
+            progress_message += f" {message}."
+
+        bot_response(progress_message)
+
     async def execute_tool_call(  # noqa: PLR0911
         self: "MCPClient", tool_call_id: str, tool_name: str, arguments: dict
     ) -> str:
@@ -659,7 +687,11 @@ class MCPClient:
                 ) as session:
                     await session.initialize()
 
-                    tool_result = await session.call_tool(actual_tool_name, arguments=arguments)
+                    tool_result = await session.call_tool(
+                        actual_tool_name,
+                        arguments=arguments,
+                        progress_callback=functools.partial(self.progress_handler, tool_call_id),
+                    )
         except ExceptionGroup:
             LOGGER.warning(
                 f"Failed tool call to {actual_tool_name} of MCP server {server_name}.",
