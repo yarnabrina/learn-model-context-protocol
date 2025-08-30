@@ -40,7 +40,7 @@ async def parse_arithmetic_expression(text: str, context: Context) -> str:
 
 Return only the postfix arithmetic expression without any additional text or explanation.
 """
-    await context.info(f"Starting sampling to parse {text=}.")
+    await context.report_progress(1, total=2, message="Started MCP sampling.")
 
     response = await context.session.create_message(
         messages=[
@@ -52,14 +52,16 @@ Return only the postfix arithmetic expression without any additional text or exp
         temperature=0,
     )
 
-    if isinstance(response.content, TextContent):
-        expression = response.content.text.strip()
-    else:
-        await context.error("Expected response content to be text.")
+    await context.report_progress(2, 2, "Finished MCP sampling.")
 
-        raise TypeError("Response content is not a text content.")
+    if not isinstance(response.content, TextContent):
+        await context.error(f"Expected response content to be text: {response.content}.")
 
-    await context.info(f"Completed parsing into {expression=}.")
+        raise TypeError(f"Response content is not a text content: : {response.content}.")
+
+    expression = response.content.text.strip()
+
+    await context.debug(f"Completed parsing {text=} into {expression=}.")
 
     return expression
 

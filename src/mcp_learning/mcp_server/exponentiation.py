@@ -50,28 +50,28 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
         if the base is zero and the exponent is a negative integer
     """
     if not exponent.is_integer():
-        await context.info(f"Starting elicitation to correct {exponent=}.")
+        await context.report_progress(1, total=2, message="Starting MCP elicitation.")
 
         elicitation_result = await context.elicit(
             f"Provided {exponent=} is not an integer, and currently unsupported.",
             ExponentCorrection,
         )
 
-        await context.info(f"Completed elicitation with {elicitation_result=}.")
+        await context.report_progress(1, total=2, message="Finished MCP elicitation.")
 
         match elicitation_result.action:
             case "accept":
-                await context.info(
-                    f"User corrected {exponent=} to {elicitation_result.data.corrected_exponent}."
-                )
+                corrected_exponent = elicitation_result.data.corrected_exponent
 
-                exponent = elicitation_result.data.corrected_exponent
+                await context.debug(f"User corrected {exponent=} to {corrected_exponent}.")
             case "decline" | "cancel":
-                await context.info(
-                    f"User decided to {elicitation_result.action=} the correction request."
+                await context.error(
+                    f"User decided to {elicitation_result.action} the correction request."
                 )
 
                 raise NotImplementedError("Only integer powers are currently supported.")
+
+        exponent = corrected_exponent
 
     if base == IdentityElements.ADDITIVE_IDENTITY == exponent:
         raise ValueError("0 raised to the power 0 is undefined.")
