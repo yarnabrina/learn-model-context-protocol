@@ -584,8 +584,9 @@ class MCPClient:
 
         return elicitation_response_message
 
+    @staticmethod
     async def logging_handler(
-        self: "MCPClient", tool_call_id: str, parameters: LoggingMessageNotificationParams
+        tool_call_id: str, parameters: LoggingMessageNotificationParams
     ) -> None:
         """Handle logging requests from MCP tools.
 
