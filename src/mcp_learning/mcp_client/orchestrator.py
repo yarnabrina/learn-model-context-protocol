@@ -523,7 +523,7 @@ class MCPClient:
 
         bot_response(elicitation_request_message)
 
-        user_input = user_prompt()
+        user_input = await user_prompt()
 
         elicitation_events["user_input"] = user_input
 
