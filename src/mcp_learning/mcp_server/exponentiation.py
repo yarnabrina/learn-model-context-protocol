@@ -61,8 +61,16 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
 
         match elicitation_result.action:
             case "accept":
+                await context.info(
+                    f"User corrected {exponent=} to {elicitation_result.data.corrected_exponent}."
+                )
+
                 exponent = elicitation_result.data.corrected_exponent
             case "decline" | "cancel":
+                await context.info(
+                    f"User decided to {elicitation_result.action=} the correction request."
+                )
+
                 raise NotImplementedError("Only integer powers are currently supported.")
 
     if base == IdentityElements.ADDITIVE_IDENTITY == exponent:
