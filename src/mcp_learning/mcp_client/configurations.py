@@ -23,6 +23,10 @@ class LogLevel(enum.StrEnum):
 class ServerConfigurations(pydantic_settings.BaseSettings):
     """Define configurations for the MCP client."""
 
+    sampling: pydantic_settings.CliImplicitFlag[bool] = True
+    elicitation: pydantic_settings.CliImplicitFlag[bool] = True
+    logging: pydantic_settings.CliImplicitFlag[bool] = True
+    progress: pydantic_settings.CliImplicitFlag[bool] = True
     debug: pydantic_settings.CliImplicitFlag[bool] = False
     log_level: LogLevel = LogLevel.WARNING
     log_file: str | None = "mcp_client.log"

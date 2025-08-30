@@ -672,6 +672,27 @@ class MCPClient:
             f"with following parameters: {arguments}."
         )
 
+        sampling_handler = (
+            functools.partial(self.sampling_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+        elicitation_handler = (
+            functools.partial(self.elicitation_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+        logging_handler = (
+            functools.partial(self.logging_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+        progress_handler = (
+            functools.partial(self.progress_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+
         try:
             async with streamablehttp_client(server_url) as (  # noqa: SIM117
                 read_stream,
@@ -681,16 +702,14 @@ class MCPClient:
                 async with ClientSession(
                     read_stream,
                     write_stream,
-                    sampling_callback=functools.partial(self.sampling_handler, tool_call_id),
-                    elicitation_callback=functools.partial(self.elicitation_handler, tool_call_id),
-                    logging_callback=functools.partial(self.logging_handler, tool_call_id),
+                    sampling_callback=sampling_handler,
+                    elicitation_callback=elicitation_handler,
+                    logging_callback=logging_handler,
                 ) as session:
                     await session.initialize()
 
                     tool_result = await session.call_tool(
-                        actual_tool_name,
-                        arguments=arguments,
-                        progress_callback=functools.partial(self.progress_handler, tool_call_id),
+                        actual_tool_name, arguments=arguments, progress_callback=progress_handler
                     )
         except ExceptionGroup:
             LOGGER.warning(
