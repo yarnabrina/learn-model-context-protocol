@@ -214,7 +214,7 @@ class ChatInterface:
         bot_response("Type '/help' to see more information.")
 
         while True:
-            user_input = user_prompt()
+            user_input = await user_prompt()
 
             command, command_inputs = self.parse_command(user_input)
 

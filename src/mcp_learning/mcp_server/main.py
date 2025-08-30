@@ -22,8 +22,12 @@ def main() -> None:
 
     mcp_server = FastMCP(
         name="Basic MCP Server for Demonstration",
+        instructions=(
+            "MCP server that can perform basic arithmetic operations"
+            " and parse/evaluate arithmetic expressions."
+        ),
         debug=settings.debug,
-        log_level=settings.log_level,
+        log_level=settings.log_level.value,
         host=settings.host,
         port=settings.port,
         streamable_http_path=settings.streamable_http_path,
@@ -33,6 +37,7 @@ def main() -> None:
 
     mcp_server.add_tool(
         add_numbers,
+        name="addition",
         title="Add Numbers",
         description="Perform addition of two real numbers",
         annotations=ToolAnnotations(title="Addition", readOnlyHint=True, openWorldHint=False),
@@ -40,6 +45,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         get_negative,
+        name="negation",
         title="Get Negative",
         description="Get additive inverse of a real number",
         annotations=ToolAnnotations(
@@ -49,6 +55,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         subtract_numbers,
+        name="subtraction",
         title="Subtract Numbers",
         description="Perform subtraction of two real numbers",
         annotations=ToolAnnotations(title="Subtraction", readOnlyHint=True, openWorldHint=False),
@@ -56,6 +63,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         multiply_numbers,
+        name="multiplication",
         title="Multiply Numbers",
         description="Perform multiplication of two real numbers",
         annotations=ToolAnnotations(
@@ -65,6 +73,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         get_reciprocal,
+        name="reciprocal",
         title="Get Reciprocal",
         description="Get multiplicative inverse of a real number",
         annotations=ToolAnnotations(
@@ -74,6 +83,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         divide_numbers,
+        name="division",
         title="Divide Numbers",
         description="Perform division of two real numbers",
         annotations=ToolAnnotations(title="Division", readOnlyHint=True, openWorldHint=False),
@@ -81,6 +91,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         parse_arithmetic_expression,
+        name="parse_expression",
         title="Parse Arithmetic Expression",
         description="Parse a text into a valid arithmetic expression",
         annotations=ToolAnnotations(
@@ -90,6 +101,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         evaluate_arithmetic_expression,
+        name="evaluate_expression",
         title="Evaluate Arithmetic Expression",
         description="Evaluate a valid postfix arithmetic expression",
         annotations=ToolAnnotations(
@@ -99,6 +111,7 @@ def main() -> None:
     )
     mcp_server.add_tool(
         exponentiate,
+        name="exponentiation",
         title="Power",
         description="Raise a base to an exponent",
         annotations=ToolAnnotations(

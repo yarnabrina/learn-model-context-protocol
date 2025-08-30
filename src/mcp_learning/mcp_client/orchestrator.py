@@ -523,7 +523,7 @@ class MCPClient:
 
         bot_response(elicitation_request_message)
 
-        user_input = user_prompt()
+        user_input = await user_prompt()
 
         elicitation_events["user_input"] = user_input
 
@@ -584,8 +584,9 @@ class MCPClient:
 
         return elicitation_response_message
 
+    @staticmethod
     async def logging_handler(
-        self: "MCPClient", tool_call_id: str, parameters: LoggingMessageNotificationParams
+        tool_call_id: str, parameters: LoggingMessageNotificationParams
     ) -> None:
         """Handle logging requests from MCP tools.
 
@@ -599,6 +600,34 @@ class MCPClient:
         LOGGER.log(
             MCP_LOG_LEVELS[parameters.level], parameters.data, extra={"tool_call_id": tool_call_id}
         )
+
+    @staticmethod
+    async def progress_handler(
+        tool_call_id: str, progress: float, total: float | None = None, message: str | None = None
+    ) -> None:
+        """Report progress for MCP tools.
+
+        Parameters
+        ----------
+        tool_call_id : str
+            unique identifier for the tool call
+        progress : float
+            current progress value
+        total : float | None, optional
+            total progress value, by default None
+        message : str | None, optional
+            optional message to accompany the progress report, by default None
+        """
+        completion = f"{progress}"
+        if total is not None:
+            completion += f"/{total}"
+
+        progress_message = f"Progress of {tool_call_id}: {completion}."
+
+        if message:
+            progress_message += f" {message}."
+
+        bot_response(progress_message)
 
     async def execute_tool_call(  # noqa: PLR0911
         self: "MCPClient", tool_call_id: str, tool_name: str, arguments: dict
@@ -643,6 +672,27 @@ class MCPClient:
             f"with following parameters: {arguments}."
         )
 
+        sampling_handler = (
+            functools.partial(self.sampling_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+        elicitation_handler = (
+            functools.partial(self.elicitation_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+        logging_handler = (
+            functools.partial(self.logging_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+        progress_handler = (
+            functools.partial(self.progress_handler, tool_call_id)
+            if self.settings.sampling
+            else None
+        )
+
         try:
             async with streamablehttp_client(server_url) as (  # noqa: SIM117
                 read_stream,
@@ -652,13 +702,15 @@ class MCPClient:
                 async with ClientSession(
                     read_stream,
                     write_stream,
-                    sampling_callback=functools.partial(self.sampling_handler, tool_call_id),
-                    elicitation_callback=functools.partial(self.elicitation_handler, tool_call_id),
-                    logging_callback=functools.partial(self.logging_handler, tool_call_id),
+                    sampling_callback=sampling_handler,
+                    elicitation_callback=elicitation_handler,
+                    logging_callback=logging_handler,
                 ) as session:
                     await session.initialize()
 
-                    tool_result = await session.call_tool(actual_tool_name, arguments=arguments)
+                    tool_result = await session.call_tool(
+                        actual_tool_name, arguments=arguments, progress_callback=progress_handler
+                    )
         except ExceptionGroup:
             LOGGER.warning(
                 f"Failed tool call to {actual_tool_name} of MCP server {server_name}.",
