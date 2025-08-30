@@ -23,7 +23,7 @@ def main() -> None:
     mcp_server = FastMCP(
         name="Basic MCP Server for Demonstration",
         debug=settings.debug,
-        log_level=settings.log_level,
+        log_level=settings.log_level.value,
         host=settings.host,
         port=settings.port,
         streamable_http_path=settings.streamable_http_path,
