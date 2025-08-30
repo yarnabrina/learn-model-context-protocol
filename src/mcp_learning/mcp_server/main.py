@@ -22,6 +22,10 @@ def main() -> None:
 
     mcp_server = FastMCP(
         name="Basic MCP Server for Demonstration",
+        instructions=(
+            "MCP server that can perform basic arithmetic operations"
+            " and parse/evaluate arithmetic expressions."
+        ),
         debug=settings.debug,
         log_level=settings.log_level.value,
         host=settings.host,
