@@ -21,7 +21,7 @@ class LogLevel(enum.StrEnum):
 
 
 class ServerConfigurations(pydantic_settings.BaseSettings):
-    """Define configurations for the MCP server."""
+    """Define configurations for the MCP client."""
 
     debug: pydantic_settings.CliImplicitFlag[bool] = False
     log_level: LogLevel = LogLevel.WARNING
