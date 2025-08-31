@@ -4,17 +4,27 @@ import logging
 import logging.config
 import typing
 
-import prompt_toolkit
-import prompt_toolkit.key_binding
-import prompt_toolkit.styles
 import rich
 import rich.logging
 import rich.pretty
 
 from .configurations import Configurations
+from .utils import MissingOptionalDependencyError, validate_optional_dependency_installation
 
 CONSOLE = rich.get_console()
-SESSION = prompt_toolkit.PromptSession()
+
+try:
+    validate_optional_dependency_installation("prompt-toolkit", import_name="prompt_toolkit")
+except MissingOptionalDependencyError:
+    ENHANCED_CLI_AVAILABLE = False
+else:
+    ENHANCED_CLI_AVAILABLE = True
+
+    import prompt_toolkit
+    import prompt_toolkit.key_binding
+    import prompt_toolkit.styles
+
+    SESSION = prompt_toolkit.PromptSession()
 
 
 def create_rich_handler(level: int | str = logging.NOTSET) -> rich.logging.RichHandler:
@@ -144,6 +154,9 @@ async def user_prompt() -> str:
     str
         user provided input
     """
+    if not ENHANCED_CLI_AVAILABLE:
+        return CONSOLE.input(prompt="\n[bold blue][You][/bold blue] ")
+
     key_bindings = prompt_toolkit.key_binding.KeyBindings()
 
     @key_bindings.add("enter")
