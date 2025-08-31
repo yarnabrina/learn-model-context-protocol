@@ -40,11 +40,18 @@ dependencies = [
   "rich>=14.1.0,<15",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-  "black",
   "pip",
   "pre-commit",
+  { include-group = "format" },
+  { include-group = "lint" },
+]
+format = [
+  "black",
+  "ruff",
+]
+lint = [
   "pylint",
   "ruff",
 ]
