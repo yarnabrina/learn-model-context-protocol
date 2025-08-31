@@ -328,3 +328,8 @@ checks = [  # Report findings on all checks except the ones listed below "all"
 exclude = [  # Don't report issues on objects matching any of the regular regular expressions
   "\\.__init__$",
 ]
+
+[tool.uv]
+default-groups = [
+  "dev",
+]
