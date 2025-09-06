@@ -8,7 +8,14 @@ import re
 import sys
 
 from .orchestrator import MCPClient, OpenAIOrchestrator, Status
-from .utils import Configurations, bot_response, initiate_logging, llm_response, user_prompt
+from .utils import (
+    Configurations,
+    bot_response,
+    get_monitoring_client,
+    initiate_logging,
+    llm_response,
+    user_prompt,
+)
 
 HELP_MESSAGE = """
 /help
@@ -75,6 +82,8 @@ class ChatInterface:
 
     Attributes
     ----------
+    langfuse_client : langfuse.Langfuse | NoOpLangfuseClient
+        client for tracking interactions and events
     mcp_client : MCPClient
         client for managing MCP servers and their tools
     llm_orchestrator : OpenAIOrchestrator
@@ -84,9 +93,13 @@ class ChatInterface:
     def __init__(self: "ChatInterface", settings: Configurations) -> None:
         self.settings = settings
 
-        self.mcp_client = MCPClient(settings)
+        self.langfuse_client = get_monitoring_client(settings)
+        self.mcp_client = MCPClient(settings, self.langfuse_client)
         self.llm_orchestrator = OpenAIOrchestrator(
-            self.settings, system_prompt=SYSTEM_PROMPT, mcp_client=self.mcp_client
+            self.settings,
+            self.langfuse_client,
+            system_prompt=SYSTEM_PROMPT,
+            mcp_client=self.mcp_client,
         )
 
     @functools.cached_property
@@ -231,7 +244,16 @@ class ChatInterface:
 
                 continue
 
-            await llm_response(self.llm_orchestrator.process_user_message(user_input))
+            with self.langfuse_client.start_as_current_observation(
+                name="interactive chat", as_type="span", end_on_exit=True
+            ) as span_monitoring:
+                span_monitoring.update(input=user_input)
+
+                llm_output = await llm_response(
+                    self.llm_orchestrator.process_user_message(user_input)
+                )
+
+                span_monitoring.update(output=llm_output)
 
 
 def main() -> None:

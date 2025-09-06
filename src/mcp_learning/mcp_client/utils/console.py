@@ -79,18 +79,28 @@ def bot_response(message: typing.Any) -> None:  # noqa: ANN401
     CONSOLE.print("[bold magenta][Bot][/bold magenta]", message)
 
 
-async def llm_response(token_stream: typing.AsyncIterable[str]) -> None:
+async def llm_response(token_stream: typing.AsyncIterable[str]) -> str:
     """Print the LLM response in a formatted way.
 
     Parameters
     ----------
     token_stream : typing.AsyncIterable[str]
         stream of message to print
+
+    Returns
+    -------
+    str
+        full response as a single string
     """
     CONSOLE.print("[bold green][LLM][/bold green] ", end="")
 
+    full_response = ""
     async for token in token_stream:
         CONSOLE.print(token, end="")
+
+        full_response += token
+
+    return full_response
 
 
 __all__ = [

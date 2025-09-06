@@ -37,7 +37,7 @@ from openai.types.chat.chat_completion_message_function_tool_call_param import (
 from openai.types.shared_params import FunctionDefinition
 
 from .llm import OpenAIClient
-from .utils import Configurations, bot_response, user_prompt
+from .utils import Configurations, MonitoringClient, bot_response, user_prompt
 
 LOGGER = logging.getLogger(__name__)
 
@@ -139,6 +139,8 @@ class MCPClient:
     ----------
     settings : Configurations
         language model configurations containing API keys and customisations
+    langfuse_client : MonitoringClient
+        client for monitoring and logging interactions, including Langfuse integration
 
     Attributes
     ----------
@@ -152,8 +154,11 @@ class MCPClient:
         mapping of tool call identifiers to their events
     """
 
-    def __init__(self: "MCPClient", settings: Configurations) -> None:
+    def __init__(
+        self: "MCPClient", settings: Configurations, langfuse_client: MonitoringClient
+    ) -> None:
         self.settings = settings
+        self.langfuse_client = langfuse_client
 
         self.mcp_servers: dict[str, MCPServer] = {}
         self.mcp_server_tools: dict[str, list[MCPTool]] = {}
@@ -419,36 +424,48 @@ class MCPClient:
                     )
                 ]
 
-        try:
-            non_streaming_openai_response = (
-                await self.openai_client.get_non_streaming_openai_response(
-                    messages,
-                    system_prompt=parameters.systemPrompt,
-                    tools=filtered_openai_tools,
-                    openai_customisations=openai_customisations,
+        with self.langfuse_client.start_as_current_observation(
+            name=f"sampling for tool call {tool_call_id}",
+            as_type="span",
+            input=messages,
+            end_on_exit=True,
+        ) as sampling_monitoring:
+            try:
+                non_streaming_openai_response = (
+                    await self.openai_client.get_non_streaming_openai_response(
+                        messages,
+                        system_prompt=parameters.systemPrompt,
+                        tools=filtered_openai_tools,
+                        openai_customisations=openai_customisations,
+                    )
                 )
-            )
-        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+                LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
 
-            return ErrorData(
-                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                message=f"Failed to get OpenAI response: {error}.",
-            )
+                sampling_monitoring.update(output=f"Failed to get OpenAI response: {error}.")
 
-        LOGGER.debug(f"Received response from OpenAI: {non_streaming_openai_response}.")
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message=f"Failed to get OpenAI response: {error}.",
+                )
 
-        if not (choices := non_streaming_openai_response.choices):
-            LOGGER.warning("Received empty response from OpenAI.")
+            LOGGER.debug(f"Received response from OpenAI: {non_streaming_openai_response}.")
 
-            return ErrorData(
-                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                message="No choices returned from OpenAI API.",
-            )
+            if not (choices := non_streaming_openai_response.choices):
+                LOGGER.warning("Received empty response from OpenAI.")
 
-        choice = choices[0]
+                sampling_monitoring.update(output="Received empty response from OpenAI.")
 
-        sampling_response_message = choice.message.content or ""
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message="No choices returned from OpenAI API.",
+                )
+
+            choice = choices[0]
+
+            sampling_response_message = choice.message.content or ""
+
+            sampling_monitoring.update(output=sampling_response_message)
 
         sampling_events["sampling_response"] = sampling_response_message
 
@@ -505,31 +522,45 @@ class MCPClient:
             ),
         ]
 
-        try:
-            elicitation_request_openai_response = (
-                await self.openai_client.get_non_streaming_openai_response(
-                    elicitation_request_messages
+        with self.langfuse_client.start_as_current_observation(
+            name=f"elicitation request for tool call {tool_call_id}",
+            as_type="span",
+            input=elicitation_request_messages,
+            end_on_exit=True,
+        ) as elicitation_request_monitoring:
+            try:
+                elicitation_request_openai_response = (
+                    await self.openai_client.get_non_streaming_openai_response(
+                        elicitation_request_messages
+                    )
                 )
-            )
-        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+                LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
 
-            return ErrorData(
-                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                message=f"Failed to get OpenAI response: {error}.",
-            )
+                elicitation_request_monitoring.update(output="Failed to get OpenAI response.")
 
-        LOGGER.debug(f"Received response from OpenAI: {elicitation_request_openai_response}.")
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message=f"Failed to get OpenAI response: {error}.",
+                )
 
-        if not (choices := elicitation_request_openai_response.choices):
-            LOGGER.warning("Received empty response from OpenAI.")
+            LOGGER.debug(f"Received response from OpenAI: {elicitation_request_openai_response}.")
 
-            return ErrorData(
-                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                message="No choices returned from OpenAI API.",
-            )
+            if not (choices := elicitation_request_openai_response.choices):
+                LOGGER.warning("Received empty response from OpenAI.")
 
-        elicitation_request_message = choices[0].message.content or ""
+                elicitation_request_monitoring.update(
+                    output="Received empty response from OpenAI."
+                )
+
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message="No choices returned from OpenAI API.",
+                )
+
+            elicitation_request_message = choices[0].message.content or ""
+
+            elicitation_request_monitoring.update(output=elicitation_request_message)
 
         elicitation_events["elicitation_prompt"] = elicitation_request_message
 
@@ -556,41 +587,59 @@ class MCPClient:
             ChatCompletionUserMessageParam(content=user_input, role="user"),
         ]
 
-        try:
-            elicitation_response_openai_response = (
-                await self.openai_client.get_non_streaming_openai_response(
-                    elicitation_response_messages
+        with self.langfuse_client.start_as_current_observation(
+            name=f"elicitation response for tool call {tool_call_id}",
+            as_type="span",
+            input=elicitation_response_messages,
+            end_on_exit=True,
+        ) as elicitation_response_monitoring:
+            try:
+                elicitation_response_openai_response = (
+                    await self.openai_client.get_non_streaming_openai_response(
+                        elicitation_response_messages
+                    )
                 )
-            )
-        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-            LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+                LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
 
-            return ErrorData(
-                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                message=f"Failed to get OpenAI response: {error}.",
-            )
+                elicitation_response_monitoring.update(output="Failed to get OpenAI response.")
 
-        LOGGER.debug(f"Received response from OpenAI: {elicitation_response_openai_response}.")
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message=f"Failed to get OpenAI response: {error}.",
+                )
 
-        if not (choices := elicitation_response_openai_response.choices):
-            LOGGER.warning("Received empty response from OpenAI.")
+            LOGGER.debug(f"Received response from OpenAI: {elicitation_response_openai_response}.")
 
-            return ErrorData(
-                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                message="No choices returned from OpenAI API.",
-            )
+            if not (choices := elicitation_response_openai_response.choices):
+                LOGGER.warning("Received empty response from OpenAI.")
 
-        try:
-            elicitation_response_message = json.loads(choices[0].message.content or "{}")
-        except json.JSONDecodeError as error:
-            LOGGER.warning("Failed to parse elicitation response as JSON.", exc_info=True)
+                elicitation_response_monitoring.update(
+                    output="Received empty response from OpenAI."
+                )
 
-            return ErrorData(
-                code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                message=f"Failed to parse elicitation response: {error}.",
-            )
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message="No choices returned from OpenAI API.",
+                )
 
-        elicitation_events["elicitation_correction"] = elicitation_response_message
+            try:
+                elicitation_response_message = json.loads(choices[0].message.content or "{}")
+            except json.JSONDecodeError as error:
+                LOGGER.warning("Failed to parse elicitation response as JSON.", exc_info=True)
+
+                elicitation_response_monitoring.update(
+                    output=f"Failed to parse elicitation response as JSON: {error}."
+                )
+
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message=f"Failed to parse elicitation response: {error}.",
+                )
+
+            elicitation_events["elicitation_correction"] = elicitation_response_message
+
+            elicitation_response_monitoring.update(output=elicitation_response_message)
 
         self.tool_call_events[tool_call_id]["elicitation_events"] = elicitation_events
 
@@ -771,6 +820,8 @@ class OpenAIOrchestrator:
     ----------
     settings : Configurations
         language model configurations containing API keys and customisations
+    langfuse_client : MonitoringClient
+        client for monitoring and logging interactions, including Langfuse integration
     system_prompt : str | None, optional
         initial system prompt to set the context, by default None
     mcp_client : MCPClient, optional
@@ -787,11 +838,13 @@ class OpenAIOrchestrator:
     def __init__(
         self: "OpenAIOrchestrator",
         settings: Configurations,
+        langfuse_client: MonitoringClient,
         system_prompt: str | None = None,
         mcp_client: MCPClient | None = None,
     ) -> None:
         self.settings = settings
         self.system_prompt = system_prompt
+        self.langfuse_client = langfuse_client
         self.mcp_client = mcp_client
 
         self.openai_client = OpenAIClient(self.settings)
@@ -848,7 +901,7 @@ class OpenAIOrchestrator:
 
             yield finish_reason, None, [tool_call for _, tool_call in tool_calls.items()]
 
-    async def process_user_message(  # noqa: C901, PLR0912
+    async def process_user_message(  # noqa: C901, PLR0912, PLR0915
         self: "OpenAIOrchestrator", user_message: str
     ) -> collections.abc.AsyncGenerator[str]:
         """Process a user message and generate a response using OpenAI API.
@@ -865,94 +918,9 @@ class OpenAIOrchestrator:
         """
         self.conversation_history.append({"role": "user", "content": user_message})
 
-        assistant_message = ""
-        async for (
-            finish_reason_delta,
-            assistant_message_token,
-            assistant_tool_calls_delta,
-        ) in self.call_openai():
-            if assistant_message_token:
-                assistant_message += assistant_message_token
-
-                yield assistant_message_token
-
-            if finish_reason_delta:
-                finish_reason = finish_reason_delta
-                assistant_tool_calls = assistant_tool_calls_delta
-
-                yield "\n"
-
-                break
-        else:
-            yield "\n"
-
-        while finish_reason == "tool_calls":
-            self.conversation_history.append(
-                ChatCompletionAssistantMessageParam(
-                    role="assistant", content=assistant_message, tool_calls=assistant_tool_calls
-                )
-            )
-
-            LOGGER.debug(f"Identified tool calls: {assistant_tool_calls}.")
-
-            for tool_call in assistant_tool_calls:
-                tool_call_id = tool_call["id"]
-                tool_name = tool_call["function"]["name"]
-                tool_arguments = tool_call["function"]["arguments"]
-
-                try:
-                    parsed_tool_arguments = json.loads(tool_arguments)
-                except json.JSONDecodeError as error:
-                    self.conversation_history.append(
-                        ChatCompletionToolMessageParam(
-                            content=f"Error: {error}", role="tool", tool_call_id=tool_call_id
-                        )
-                    )
-                else:
-                    tool_execution_result = await self.mcp_client.execute_tool_call(
-                        tool_call_id, tool_name, parsed_tool_arguments
-                    )
-
-                    tool_call_events = self.mcp_client.tool_call_events[tool_call_id]
-
-                    if not (elicitation_events := tool_call_events.get("elicitation_events")):
-                        elicitation_information = (
-                            f"No elicitation occurred for {tool_call_id=} to {tool_name=}."
-                        )
-                    else:
-                        elicitation_information = (
-                            f"Elicitation occurred for {tool_call_id=} to {tool_name=}."
-                        )
-                        for event_type, event_details in elicitation_events.items():
-                            elicitation_information += f"\n{event_type}: {event_details}"
-
-                    if not (sampling_events := tool_call_events.get("sampling_events")):
-                        sampling_information = (
-                            f"No sampling occurred for {tool_call_id=} to {tool_name=}."
-                        )
-                    else:
-                        sampling_information = (
-                            f"Sampling occurred for {tool_call_id=} to {tool_name=}."
-                        )
-                        for event_type, event_details in sampling_events.items():
-                            sampling_information += f"\n{event_type}: {event_details}"
-
-                    self.conversation_history.append(
-                        ChatCompletionToolMessageParam(
-                            content=f"""Tool Execution Details
-
-{elicitation_information}
-
-{sampling_information}
-
-Tool Result
-
-{tool_execution_result}""",
-                            role="tool",
-                            tool_call_id=tool_call_id,
-                        )
-                    )
-
+        with self.langfuse_client.start_as_current_observation(
+            name="generation counter 0", as_type="generation", input=user_message
+        ) as generation_monitoring:
             assistant_message = ""
             async for (
                 finish_reason_delta,
@@ -973,6 +941,111 @@ Tool Result
                     break
             else:
                 yield "\n"
+
+            generation_monitoring.update(output=assistant_message)
+
+        counter = 1
+        while finish_reason == "tool_calls":
+            self.conversation_history.append(
+                ChatCompletionAssistantMessageParam(
+                    role="assistant", content=assistant_message, tool_calls=assistant_tool_calls
+                )
+            )
+
+            LOGGER.debug(f"Identified tool calls: {assistant_tool_calls}.")
+
+            for tool_call in assistant_tool_calls:
+                with self.langfuse_client.start_as_current_observation(
+                    name=f"tool call {tool_call['id']}", as_type="tool"
+                ) as tool_monitoring:
+                    tool_call_id = tool_call["id"]
+                    tool_name = tool_call["function"]["name"]
+                    tool_arguments = tool_call["function"]["arguments"]
+
+                    try:
+                        parsed_tool_arguments = json.loads(tool_arguments)
+                    except json.JSONDecodeError as error:
+                        self.conversation_history.append(
+                            ChatCompletionToolMessageParam(
+                                content=f"Error: {error}", role="tool", tool_call_id=tool_call_id
+                            )
+                        )
+                    else:
+                        tool_monitoring.update(input=parsed_tool_arguments)
+
+                        tool_execution_result = await self.mcp_client.execute_tool_call(
+                            tool_call_id, tool_name, parsed_tool_arguments
+                        )
+
+                        tool_call_events = self.mcp_client.tool_call_events[tool_call_id]
+
+                        if not (elicitation_events := tool_call_events.get("elicitation_events")):
+                            elicitation_information = (
+                                f"No elicitation occurred for {tool_call_id=} to {tool_name=}."
+                            )
+                        else:
+                            elicitation_information = (
+                                f"Elicitation occurred for {tool_call_id=} to {tool_name=}."
+                            )
+                            for event_type, event_details in elicitation_events.items():
+                                elicitation_information += f"\n{event_type}: {event_details}"
+
+                        if not (sampling_events := tool_call_events.get("sampling_events")):
+                            sampling_information = (
+                                f"No sampling occurred for {tool_call_id=} to {tool_name=}."
+                            )
+                        else:
+                            sampling_information = (
+                                f"Sampling occurred for {tool_call_id=} to {tool_name=}."
+                            )
+                            for event_type, event_details in sampling_events.items():
+                                sampling_information += f"\n{event_type}: {event_details}"
+
+                        tool_monitoring.update(output=tool_execution_result)
+
+                        self.conversation_history.append(
+                            ChatCompletionToolMessageParam(
+                                content=f"""Tool Execution Details
+
+    {elicitation_information}
+
+    {sampling_information}
+
+    Tool Result
+
+    {tool_execution_result}""",
+                                role="tool",
+                                tool_call_id=tool_call_id,
+                            )
+                        )
+
+            with self.langfuse_client.start_as_current_observation(
+                name=f"generation counter {counter}", as_type="generation"
+            ) as generation_monitoring:
+                assistant_message = ""
+                async for (
+                    finish_reason_delta,
+                    assistant_message_token,
+                    assistant_tool_calls_delta,
+                ) in self.call_openai():
+                    if assistant_message_token:
+                        assistant_message += assistant_message_token
+
+                        yield assistant_message_token
+
+                    if finish_reason_delta:
+                        finish_reason = finish_reason_delta
+                        assistant_tool_calls = assistant_tool_calls_delta
+
+                        yield "\n"
+
+                        break
+                else:
+                    yield "\n"
+
+                generation_monitoring.update(output=assistant_message)
+
+            counter += 1
 
         self.conversation_history.append({"role": "assistant", "content": assistant_message})
 
