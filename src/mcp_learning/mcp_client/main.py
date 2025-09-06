@@ -3,18 +3,25 @@
 import asyncio
 import enum
 import functools
+import json
 import re
 import sys
 
-from .configurations import Configurations
-from .console import bot_response, initiate_logging, llm_response, user_prompt
 from .orchestrator import MCPClient, OpenAIOrchestrator, Status
+from .utils import (
+    Configurations,
+    bot_response,
+    get_monitoring_client,
+    initiate_logging,
+    llm_response,
+    user_prompt,
+)
 
 HELP_MESSAGE = """
 /help
     Displays this help message.
 
-/add_server <server_name> <server_url>
+/add_server <server_name> <server_url> [<headers_json>]
     Adds or registers a new MCP server.
 
 /remove_server <server_name>
@@ -75,6 +82,8 @@ class ChatInterface:
 
     Attributes
     ----------
+    langfuse_client : langfuse.Langfuse | NoOpLangfuseClient
+        client for tracking interactions and events
     mcp_client : MCPClient
         client for managing MCP servers and their tools
     llm_orchestrator : OpenAIOrchestrator
@@ -84,9 +93,13 @@ class ChatInterface:
     def __init__(self: "ChatInterface", settings: Configurations) -> None:
         self.settings = settings
 
-        self.mcp_client = MCPClient(settings)
+        self.langfuse_client = get_monitoring_client(settings)
+        self.mcp_client = MCPClient(settings, self.langfuse_client)
         self.llm_orchestrator = OpenAIOrchestrator(
-            self.settings, system_prompt=SYSTEM_PROMPT, mcp_client=self.mcp_client
+            self.settings,
+            self.langfuse_client,
+            system_prompt=SYSTEM_PROMPT,
+            mcp_client=self.mcp_client,
         )
 
     @functools.cached_property
@@ -100,7 +113,7 @@ class ChatInterface:
         """
         return {
             ChatCommand.HELP: r"^/help$",
-            ChatCommand.ADD_SERVER: r"^/add_server\s+(?P<server_name>\S+)\s+(?P<server_url>\S+)$",
+            ChatCommand.ADD_SERVER: r"^/add_server\s+(?P<server_name>\S+)\s+(?P<server_url>\S+)(?:\s+(?P<server_headers>\{.*\}))?$",  # noqa: E501
             ChatCommand.REMOVE_SERVER: r"^/remove_server\s+(?P<server_name>\S+)$",
             ChatCommand.LIST_SERVERS: r"^/list_servers$",
             ChatCommand.LIST_TOOLS: r"^/list_tools\s+(?P<server_name>\S+)$",
@@ -136,7 +149,7 @@ class ChatInterface:
         return None, {}
 
     async def handle_command(  # noqa: C901, PLR0912
-        self: "ChatInterface", command: ChatCommand, command_inputs: dict[str, str]
+        self: "ChatInterface", command: ChatCommand, command_inputs: dict
     ) -> None:
         """Handle the command and provide appropriate responses.
 
@@ -144,7 +157,7 @@ class ChatInterface:
         ----------
         command : ChatCommand
             user provided specific command
-        command_inputs : dict[str, str]
+        command_inputs : dict
             dictionary of command inputs extracted from user input
         """
         match command:
@@ -153,9 +166,17 @@ class ChatInterface:
             case ChatCommand.ADD_SERVER:
                 server_name = command_inputs["server_name"]
                 server_url = command_inputs["server_url"]
+                server_headers = command_inputs["server_headers"]
+
+                try:
+                    parsed_server_headers = json.loads(server_headers) if server_headers else {}
+                except json.JSONDecodeError:
+                    bot_response("Invalid headers format. Please provide a valid JSON object.")
+
+                    return
 
                 addition_status, server_tools = await self.mcp_client.add_mcp_server(
-                    server_name, server_url
+                    server_name, server_url, server_headers=parsed_server_headers
                 )
 
                 if addition_status == Status.FAILURE:
@@ -223,7 +244,16 @@ class ChatInterface:
 
                 continue
 
-            await llm_response(self.llm_orchestrator.process_user_message(user_input))
+            with self.langfuse_client.start_as_current_observation(
+                name="interactive chat", as_type="span", end_on_exit=True
+            ) as span_monitoring:
+                span_monitoring.update(input=user_input)
+
+                llm_output = await llm_response(
+                    self.llm_orchestrator.process_user_message(user_input)
+                )
+
+                span_monitoring.update(output=llm_output)
 
 
 def main() -> None:

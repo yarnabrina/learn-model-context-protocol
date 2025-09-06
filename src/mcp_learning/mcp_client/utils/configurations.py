@@ -117,8 +117,51 @@ class LanguageModelConfigurations(pydantic_settings.BaseSettings):
     language_model_timeout: int = 300
 
 
+class LangfuseMonitoringConfigurations(pydantic_settings.BaseSettings):
+    """Define configurations for Langfuse monitoring."""
+
+    langfuse_enabled: pydantic_settings.CliImplicitFlag[bool] = False
+    langfuse_host: str | None = None
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: str | None = None
+
+    @pydantic.model_validator(mode="after")
+    def validate(self: "LangfuseMonitoringConfigurations") -> "LangfuseMonitoringConfigurations":
+        """Validate that valid Langfuse configurations are provided if monitoring is enabled.
+
+        Raises
+        ------
+        ValueError
+            if monitoring is enabled but configurations are not provided
+
+        Returns
+        -------
+        LangfuseMonitoringConfigurations
+            validated configurations
+        """
+        if not self.langfuse_enabled:
+            return self
+
+        if (
+            self.langfuse_host is None
+            or self.langfuse_public_key is None
+            or self.langfuse_secret_key is None
+        ):
+            raise ValueError("Langfuse configurations must be provided if monitoring is enabled.")
+
+        try:
+            pydantic.HttpUrl(self.langfuse_host)
+        except pydantic.ValidationError as error:
+            raise ValueError from error
+
+        return self
+
+
 class Configurations(
-    LanguageModelConfigurations, LanguageModelProviderConfigurations, ServerConfigurations
+    LangfuseMonitoringConfigurations,
+    LanguageModelConfigurations,
+    LanguageModelProviderConfigurations,
+    ServerConfigurations,
 ):
     """Aggregate all configurations for the MCP client."""
 
@@ -136,9 +179,11 @@ __all__ = [
     "AzureOpenAIConfigurations",
     "Configurations",
     "HostedOpenAIConfigurations",
+    "LangfuseMonitoringConfigurations",
     "LanguageModelConfigurations",
     "LanguageModelProviderConfigurations",
     "LanguageModelProviderType",
+    "LogLevel",
     "OpenAIConfigurations",
     "ServerConfigurations",
 ]

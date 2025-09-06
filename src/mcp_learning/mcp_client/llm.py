@@ -14,7 +14,7 @@ from openai.types.chat import (
     ChatCompletionToolParam,
 )
 
-from .configurations import (
+from .utils import (
     AzureOpenAIConfigurations,
     Configurations,
     HostedOpenAIConfigurations,
@@ -210,3 +210,6 @@ class OpenAIClient:
 
         async for chunk in streaming_chat_completion:
             yield chunk
+
+
+__all__ = ["OpenAIClient"]
