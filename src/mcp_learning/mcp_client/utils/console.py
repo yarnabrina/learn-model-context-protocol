@@ -93,4 +93,11 @@ async def llm_response(token_stream: typing.AsyncIterable[str]) -> None:
         CONSOLE.print(token, end="")
 
 
-__all__ = ["CONSOLE", "bot_response", "llm_response", "user_prompt"]
+__all__ = [
+    "CONSOLE",
+    "ENHANCED_CLI_AVAILABLE",
+    "SESSION",
+    "bot_response",
+    "llm_response",
+    "user_prompt",
+]
