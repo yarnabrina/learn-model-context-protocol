@@ -3,6 +3,7 @@
 import asyncio
 import enum
 import functools
+import json
 import re
 import sys
 
@@ -13,7 +14,7 @@ HELP_MESSAGE = """
 /help
     Displays this help message.
 
-/add_server <server_name> <server_url>
+/add_server <server_name> <server_url> [<headers_json>]
     Adds or registers a new MCP server.
 
 /remove_server <server_name>
@@ -99,7 +100,7 @@ class ChatInterface:
         """
         return {
             ChatCommand.HELP: r"^/help$",
-            ChatCommand.ADD_SERVER: r"^/add_server\s+(?P<server_name>\S+)\s+(?P<server_url>\S+)$",
+            ChatCommand.ADD_SERVER: r"^/add_server\s+(?P<server_name>\S+)\s+(?P<server_url>\S+)(?:\s+(?P<server_headers>\{.*\}))?$",  # noqa: E501
             ChatCommand.REMOVE_SERVER: r"^/remove_server\s+(?P<server_name>\S+)$",
             ChatCommand.LIST_SERVERS: r"^/list_servers$",
             ChatCommand.LIST_TOOLS: r"^/list_tools\s+(?P<server_name>\S+)$",
@@ -135,7 +136,7 @@ class ChatInterface:
         return None, {}
 
     async def handle_command(  # noqa: C901, PLR0912
-        self: "ChatInterface", command: ChatCommand, command_inputs: dict[str, str]
+        self: "ChatInterface", command: ChatCommand, command_inputs: dict
     ) -> None:
         """Handle the command and provide appropriate responses.
 
@@ -143,7 +144,7 @@ class ChatInterface:
         ----------
         command : ChatCommand
             user provided specific command
-        command_inputs : dict[str, str]
+        command_inputs : dict
             dictionary of command inputs extracted from user input
         """
         match command:
@@ -152,9 +153,17 @@ class ChatInterface:
             case ChatCommand.ADD_SERVER:
                 server_name = command_inputs["server_name"]
                 server_url = command_inputs["server_url"]
+                server_headers = command_inputs["server_headers"]
+
+                try:
+                    parsed_server_headers = json.loads(server_headers) if server_headers else {}
+                except json.JSONDecodeError:
+                    bot_response("Invalid headers format. Please provide a valid JSON object.")
+
+                    return
 
                 addition_status, server_tools = await self.mcp_client.add_mcp_server(
-                    server_name, server_url
+                    server_name, server_url, server_headers=parsed_server_headers
                 )
 
                 if addition_status == Status.FAILURE:

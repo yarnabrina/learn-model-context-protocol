@@ -53,6 +53,14 @@ MCP_LOG_LEVELS = {
 }
 
 
+class MCPServer(pydantic.BaseModel):
+    """Define an MCP server."""
+
+    name: str
+    connection_url: str
+    connection_headers: dict | None = None
+
+
 class MCPTool(pydantic.BaseModel):
     """Define a tool available on an MCP server."""
 
@@ -133,8 +141,8 @@ class MCPClient:
 
     Attributes
     ----------
-    mcp_servers : dict[str, str]
-        mapping of MCP server names to their URLs
+    mcp_servers : dict[str, MCPServer]
+        mapping of MCP server names to their connection details
     mcp_server_tools : dict[str, list[MCPTool]]
         mapping of MCP server names to their available tools
     openai_client : OpenAIClient
@@ -146,7 +154,7 @@ class MCPClient:
     def __init__(self: "MCPClient", settings: Configurations) -> None:
         self.settings = settings
 
-        self.mcp_servers: dict[str, str] = {}
+        self.mcp_servers: dict[str, MCPServer] = {}
         self.mcp_server_tools: dict[str, list[MCPTool]] = {}
 
         self.openai_client = OpenAIClient(self.settings)
@@ -154,7 +162,7 @@ class MCPClient:
         self.tool_call_events: dict[str, dict] = {}
 
     async def add_mcp_server(
-        self: "MCPClient", server_name: str, server_url: str
+        self: "MCPClient", server_name: str, server_url: str, server_headers: dict | None = None
     ) -> tuple[Status, list[str]]:
         """Add a new MCP server and retrieve its available tools.
 
@@ -164,6 +172,8 @@ class MCPClient:
             name of the MCP server to add
         server_url : str
             URL of the MCP server to add
+        server_headers : dict | None, optional
+            headers to include in requests to the MCP server, by default None
 
         Returns
         -------
@@ -172,14 +182,14 @@ class MCPClient:
         list[str]
             list of tool names available on the added MCP server
         """
-        self.mcp_servers[server_name] = server_url
+        server = MCPServer(
+            name=server_name, connection_url=server_url, connection_headers=server_headers
+        )
 
         try:
-            async with streamablehttp_client(server_url) as (  # noqa: SIM117
-                read_stream,
-                write_stream,
-                _,
-            ):
+            async with streamablehttp_client(  # noqa: SIM117
+                server.connection_url, headers=server.connection_headers
+            ) as (read_stream, write_stream, _):
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
 
@@ -187,15 +197,13 @@ class MCPClient:
         except ExceptionGroup:
             LOGGER.exception(f"Failed to add MCP server {server_name} at {server_url}.")
 
-            _ = self.mcp_servers.pop(server_name)
-
             return Status.FAILURE, []
         except Exception:  # pylint: disable=broad-exception-caught
             LOGGER.exception(f"Failed to add MCP server {server_name} at {server_url}.")
 
-            _ = self.mcp_servers.pop(server_name)
-
             return Status.FAILURE, []
+
+        self.mcp_servers[server.name] = server
 
         processed_server_tools = [
             MCPTool(
@@ -213,12 +221,12 @@ class MCPClient:
 
         return Status.SUCCESS, [tool.display_name for tool in processed_server_tools]
 
-    def list_mcp_servers(self: "MCPClient") -> dict[str, str]:
+    def list_mcp_servers(self: "MCPClient") -> dict[str, MCPServer]:
         """List all added MCP servers.
 
         Returns
         -------
-        dict[str, str]
+        dict[str, MCPServer]
             mapping of MCP server names to their URLs
         """
         return self.mcp_servers
@@ -655,11 +663,11 @@ class MCPClient:
         if server_name not in self.mcp_servers:
             return json.dumps({"error": f"Unknown MCP connection {server_name}."})
 
-        server_url = self.mcp_servers[server_name]
+        server = self.mcp_servers[server_name]
 
         self.tool_call_events[tool_call_id] = {
             "server_name": server_name,
-            "server_url": server_url,
+            "server_url": server.connection_url,
             "tool_name": actual_tool_name,
             "arguments": arguments,
         }
@@ -667,7 +675,7 @@ class MCPClient:
         LOGGER.debug(
             f"Calling tool {actual_tool_name} "
             f"as part of tool call {tool_call_id} "
-            f"from MCP server {server_name} ({server_url}) "
+            f"from MCP server {server_name} ({server.connection_url}) "
             f"with following parameters: {arguments}."
         )
 
@@ -693,11 +701,9 @@ class MCPClient:
         )
 
         try:
-            async with streamablehttp_client(server_url) as (  # noqa: SIM117
-                read_stream,
-                write_stream,
-                _,
-            ):
+            async with streamablehttp_client(  # noqa: SIM117
+                server.connection_url, headers=server.connection_headers
+            ) as (read_stream, write_stream, _):
                 async with ClientSession(
                     read_stream,
                     write_stream,
@@ -728,7 +734,7 @@ class MCPClient:
         LOGGER.debug(
             f"Received response from tool {actual_tool_name} "
             f"as part of tool call {tool_call_id} "
-            f"of MCP server {server_name} ({server_url}) "
+            f"of MCP server {server_name} ({server.connection_url}) "
             f"as following: {tool_result}.\n"
         )
 
