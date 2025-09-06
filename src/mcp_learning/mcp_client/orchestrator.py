@@ -71,6 +71,7 @@ class MCPTool(pydantic.BaseModel):
     input_schema: dict
     output_schema: dict | None = None
     annotations: ToolAnnotations | None = None
+    server_name: str
 
 
 class Status(enum.StrEnum):
@@ -214,6 +215,7 @@ class MCPClient:
                 input_schema=tool.inputSchema,
                 output_schema=tool.outputSchema,
                 annotations=tool.annotations,
+                server_name=server.name,
             )
             for tool in server_tools.tools
         ]
@@ -221,15 +223,18 @@ class MCPClient:
 
         return Status.SUCCESS, [tool.display_name for tool in processed_server_tools]
 
-    def list_mcp_servers(self: "MCPClient") -> dict[str, MCPServer]:
+    def list_mcp_servers(self: "MCPClient") -> dict[str, dict]:
         """List all added MCP servers.
 
         Returns
         -------
-        dict[str, MCPServer]
+        dict[str, dict]
             mapping of MCP server names to their URLs
         """
-        return self.mcp_servers
+        return {
+            server_name: server_details.model_dump()
+            for server_name, server_details in self.mcp_servers.items()
+        }
 
     def remove_mcp_server(self: "MCPClient", server_name: str) -> Status:
         """Remove an MCP server by its name.
@@ -282,7 +287,7 @@ class MCPClient:
 
     def describe_mcp_server_tool(
         self: "MCPClient", server_name: str, tool_name: str
-    ) -> tuple[Status, MCPTool | None]:
+    ) -> tuple[Status, dict | None]:
         """Describe a specific tool available on an MCP server.
 
         Parameters
@@ -296,7 +301,7 @@ class MCPClient:
         -------
         Status
             status of the description operation
-        MCPTool | None
+        dict | None
             tool details if found, None otherwise
         """
         try:
@@ -308,7 +313,7 @@ class MCPClient:
 
         for tool in server_tools:
             if tool.name == tool_name:
-                return Status.SUCCESS, tool
+                return Status.SUCCESS, tool.model_dump()
 
         LOGGER.error(f"Tool {tool_name} does not exist in MCP server {server_name}.")
 
