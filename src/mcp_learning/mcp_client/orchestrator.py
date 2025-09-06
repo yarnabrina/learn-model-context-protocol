@@ -964,3 +964,6 @@ Tool Result
                 yield "\n"
 
         self.conversation_history.append({"role": "assistant", "content": assistant_message})
+
+
+__all__ = ["MCPClient", "OpenAIOrchestrator", "Status"]

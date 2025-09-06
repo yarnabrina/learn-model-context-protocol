@@ -210,3 +210,6 @@ class OpenAIClient:
 
         async for chunk in streaming_chat_completion:
             yield chunk
+
+
+__all__ = ["OpenAIClient"]
