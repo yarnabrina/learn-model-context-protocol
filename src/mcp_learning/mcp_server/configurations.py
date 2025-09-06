@@ -22,7 +22,7 @@ class ServerConfigurations(pydantic_settings.BaseSettings):
     """Define configurations for the MCP server."""
 
     debug: pydantic_settings.CliImplicitFlag[bool] = False
-    log_level: LogLevel = LogLevel.INFO
+    log_level: LogLevel = LogLevel.WARNING
 
 
 class HttpConfigurations(pydantic_settings.BaseSettings):
