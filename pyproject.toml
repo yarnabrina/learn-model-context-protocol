@@ -69,7 +69,7 @@ mcp-client = "mcp_learning:mcp_client_main"
 
 [build-system]
 requires = [
-  "uv_build>=0.8.3,<0.9",
+  "uv_build>=0.8.15,<0.9",
 ]
 build-backend = "uv_build"
 
