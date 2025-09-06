@@ -33,7 +33,7 @@ classifiers = [
 ]
 dependencies = [
   "mcp>=1.13.1,<2",
-  "openai>=1.102.0,<2",
+  "openai>=1.106.1,<2",
   "pydantic>=2.11.7,<3",
   "pydantic-settings>=2.10.1,<3",
   "rich>=14.1.0,<15",
@@ -42,6 +42,9 @@ dependencies = [
 [project.optional-dependencies]
 cli = [
   "prompt-toolkit>=3.0.52,<4",
+]
+monitoring = [
+  "langfuse>=3.3.4,<4",
 ]
 
 [dependency-groups]
