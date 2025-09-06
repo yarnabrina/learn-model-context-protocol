@@ -1,4 +1,4 @@
-"""Utility functions for handling optional dependencies."""
+"""Handle optional dependencies."""
 
 import importlib
 import importlib.metadata
@@ -59,3 +59,6 @@ def validate_optional_dependency_installation(
             raise MissingOptionalDependencyError(
                 install_name, import_name=import_name
             ) from import_error
+
+
+__all__ = ["MissingOptionalDependencyError", "validate_optional_dependency_installation"]

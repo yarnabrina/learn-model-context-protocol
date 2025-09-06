@@ -14,7 +14,7 @@ from openai.types.chat import (
     ChatCompletionToolParam,
 )
 
-from .configurations import (
+from .utils import (
     AzureOpenAIConfigurations,
     Configurations,
     HostedOpenAIConfigurations,

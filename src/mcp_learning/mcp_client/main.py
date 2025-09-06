@@ -6,9 +6,8 @@ import functools
 import re
 import sys
 
-from .configurations import Configurations
-from .console import bot_response, initiate_logging, llm_response, user_prompt
 from .orchestrator import MCPClient, OpenAIOrchestrator, Status
+from .utils import Configurations, bot_response, initiate_logging, llm_response, user_prompt
 
 HELP_MESSAGE = """
 /help

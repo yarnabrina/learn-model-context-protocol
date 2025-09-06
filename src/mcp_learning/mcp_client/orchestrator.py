@@ -36,9 +36,8 @@ from openai.types.chat.chat_completion_message_function_tool_call_param import (
 )
 from openai.types.shared_params import FunctionDefinition
 
-from .configurations import Configurations
-from .console import bot_response, user_prompt
 from .llm import OpenAIClient
+from .utils import Configurations, bot_response, user_prompt
 
 LOGGER = logging.getLogger(__name__)
 
