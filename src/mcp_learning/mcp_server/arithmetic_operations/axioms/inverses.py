@@ -52,7 +52,7 @@ def get_negative(input_number: float) -> NegativeResult:
         >>> get_negative(-1)
         NegativeResult(negative=1.0)
     """
-    additive_inverse = InverseElements.ADDITIVE_INVERSE * input_number
+    additive_inverse = InverseElements.ADDITIVE_INVERSE.value * input_number
 
     return NegativeResult(negative=additive_inverse)
 
@@ -92,10 +92,10 @@ def get_reciprocal(input_number: float) -> ReciprocalResult:
         >>> get_reciprocal(0.5)
         ReciprocalResult(reciprocal=2.0)
     """
-    if input_number == IdentityElements.ADDITIVE_IDENTITY:
+    if input_number == IdentityElements.ADDITIVE_IDENTITY.value:
         raise DivisionByZeroError
 
-    multiplicative_inverse = InverseElements.MULTIPLICATIVE_INVERSE / input_number
+    multiplicative_inverse = InverseElements.MULTIPLICATIVE_INVERSE.value / input_number
 
     return ReciprocalResult(reciprocal=multiplicative_inverse)
 

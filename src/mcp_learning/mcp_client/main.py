@@ -7,7 +7,8 @@ import json
 import re
 import sys
 
-from .orchestrator import MCPClient, OpenAIOrchestrator, Status
+from .client import MCPClient, Status
+from .orchestrator import OpenAIOrchestrator
 from .utils import (
     Configurations,
     bot_response,
@@ -113,7 +114,7 @@ class ChatInterface:
         """
         return {
             ChatCommand.HELP: r"^/help$",
-            ChatCommand.ADD_SERVER: r"^/add_server\s+(?P<server_name>\S+)\s+(?P<server_url>\S+)(?:\s+(?P<server_headers>\{.*\}))?$",  # noqa: E501
+            ChatCommand.ADD_SERVER: r"^/add_server\s+(?P<server_name>\S+)\s+(?P<server_url>\S+)(?:\s+(?P<server_headers>\{.*\}))?$",  # noqa: E501, pylint: disable=line-too-long
             ChatCommand.REMOVE_SERVER: r"^/remove_server\s+(?P<server_name>\S+)$",
             ChatCommand.LIST_SERVERS: r"^/list_servers$",
             ChatCommand.LIST_TOOLS: r"^/list_tools\s+(?P<server_name>\S+)$",
@@ -164,12 +165,14 @@ class ChatInterface:
             case ChatCommand.HELP:
                 bot_response(f"Available commands: {HELP_MESSAGE}")
             case ChatCommand.ADD_SERVER:
-                server_name = command_inputs["server_name"]
-                server_url = command_inputs["server_url"]
-                server_headers = command_inputs["server_headers"]
+                server_name: str = command_inputs["server_name"]
+                server_url: str = command_inputs["server_url"]
+                server_headers: str = command_inputs["server_headers"]
 
                 try:
-                    parsed_server_headers = json.loads(server_headers) if server_headers else {}
+                    parsed_server_headers: dict = (
+                        json.loads(server_headers) if server_headers else {}
+                    )
                 except json.JSONDecodeError:
                     bot_response("Invalid headers format. Please provide a valid JSON object.")
 
@@ -186,7 +189,7 @@ class ChatInterface:
                 else:
                     bot_response(f"No tools in MCP server {server_name}.")
             case ChatCommand.REMOVE_SERVER:
-                server_name = command_inputs["server_name"]
+                server_name: str = command_inputs["server_name"]
 
                 removal_status = self.mcp_client.remove_mcp_server(server_name)
 
@@ -199,7 +202,7 @@ class ChatInterface:
                 else:
                     bot_response("No MCP servers configured.")
             case ChatCommand.LIST_TOOLS:
-                server_name = command_inputs["server_name"]
+                server_name: str = command_inputs["server_name"]
 
                 listing_status, server_tools = self.mcp_client.list_mcp_server_tools(server_name)
 
@@ -214,8 +217,8 @@ class ChatInterface:
                 else:
                     bot_response(f"No tools in MCP server {server_name}.")
             case ChatCommand.DESCRIBE_TOOL:
-                server_name = command_inputs["server_name"]
-                tool_name = command_inputs["tool_name"]
+                server_name: str = command_inputs["server_name"]
+                tool_name: str = command_inputs["tool_name"]
 
                 description_status, tool_description = self.mcp_client.describe_mcp_server_tool(
                     server_name, tool_name

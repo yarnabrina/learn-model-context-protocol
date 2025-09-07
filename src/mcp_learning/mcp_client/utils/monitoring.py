@@ -13,7 +13,7 @@ except MissingOptionalDependencyError:
 else:
     MONITORING_FEASIBLE = True
 
-    import langfuse
+    import langfuse  # pylint: disable=import-error
 
 
 class NoOpContextManager:
@@ -116,7 +116,7 @@ class NoOpLangfuseClient:
 type MonitoringClient = langfuse.Langfuse | NoOpLangfuseClient
 
 
-def get_monitoring_client(settings: Configurations) -> langfuse.Langfuse | NoOpLangfuseClient:
+def get_monitoring_client(settings: Configurations) -> MonitoringClient:
     """Get a Langfuse client if monitoring is enabled and the dependency is installed.
 
     Parameters
@@ -126,7 +126,7 @@ def get_monitoring_client(settings: Configurations) -> langfuse.Langfuse | NoOpL
 
     Returns
     -------
-    langfuse.Langfuse | NoOpLangfuseClient
+    MonitoringClient
         an instance of the Langfuse client or a no-op client
     """
     if MONITORING_FEASIBLE and settings.langfuse_enabled:
