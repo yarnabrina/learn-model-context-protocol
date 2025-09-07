@@ -822,10 +822,10 @@ class OpenAIOrchestrator:
         language model configurations containing API keys and customisations
     langfuse_client : MonitoringClient
         client for monitoring and logging interactions, including Langfuse integration
+    mcp_client : MCPClient
+        client for managing MCP servers and their tools
     system_prompt : str | None, optional
         initial system prompt to set the context, by default None
-    mcp_client : MCPClient, optional
-        client for managing MCP servers and their tools, by default None
 
     Attributes
     ----------
@@ -839,13 +839,13 @@ class OpenAIOrchestrator:
         self: "OpenAIOrchestrator",
         settings: Configurations,
         langfuse_client: MonitoringClient,
+        mcp_client: MCPClient,
         system_prompt: str | None = None,
-        mcp_client: MCPClient | None = None,
     ) -> None:
         self.settings = settings
-        self.system_prompt = system_prompt
         self.langfuse_client = langfuse_client
         self.mcp_client = mcp_client
+        self.system_prompt = system_prompt
 
         self.openai_client = OpenAIClient(self.settings)
         self.conversation_history: list[ChatCompletionMessageParam] = []
