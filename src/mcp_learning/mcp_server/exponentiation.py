@@ -73,13 +73,13 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
 
         exponent = corrected_exponent
 
-    if base == IdentityElements.ADDITIVE_IDENTITY == exponent:
+    if base == IdentityElements.ADDITIVE_IDENTITY.value == exponent:
         raise ValueError("0 raised to the power 0 is undefined.")
 
-    if base == IdentityElements.ADDITIVE_IDENTITY and exponent < 0:
+    if base == IdentityElements.ADDITIVE_IDENTITY.value and exponent < 0:
         raise ZeroDivisionError("0 raised to a negative power is undefined.")
 
-    power_result = IdentityElements.MULTIPLICATIVE_IDENTITY
+    power_result = IdentityElements.MULTIPLICATIVE_IDENTITY.value
     for _ in range(int(abs(exponent))):
         power_result = multiply_numbers(power_result, base).product
 

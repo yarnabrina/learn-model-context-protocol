@@ -13,7 +13,7 @@ except MissingOptionalDependencyError:
 else:
     MONITORING_FEASIBLE = True
 
-    import langfuse
+    import langfuse  # pylint: disable=import-error
 
 
 class NoOpContextManager:
