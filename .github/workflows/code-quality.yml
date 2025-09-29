@@ -17,6 +17,8 @@ defaults:
 jobs:
   pre-commit-job-identifier:
     name: pre-commit job name
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: checkout commit step
