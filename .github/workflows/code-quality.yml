@@ -38,4 +38,6 @@ jobs:
       - name: install pre-commit hooks step
         run: python3 -m pre_commit install-hooks
       - name: run pre-commit hooks step
+        env:
+          SKIP: no-commit-to-branch
         run: python3 -m pre_commit run --all-files --show-diff-on-failure
