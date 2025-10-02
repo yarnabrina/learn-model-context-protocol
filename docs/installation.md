@@ -16,7 +16,7 @@ Instructions for setting up the project environment and installing dependencies.
     cd mcp-exploration
     ```
 
-3. Setup virtual environment and install necessary dependencies:
+3. Set up a virtual environment and install necessary dependencies:
 
     ```shell
     uv sync

@@ -1,6 +1,6 @@
 # Learning Model Context Protocol
 
-Exploring different features of MCP servers and clients
+This project explores the features and usage of Model Context Protocol (MCP) servers and clients, providing a hands-on learning environment for experimenting with MCP-based tools and workflows.
 
 
 ## Documentation
