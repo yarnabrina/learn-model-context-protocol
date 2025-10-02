@@ -5,6 +5,8 @@ repo_name: learn-model-context-protocol
 edit_uri: blob/main/docs/
 site_author: Anirban Ray
 copyright: Copyright (C) 2025 Anirban Ray
+remote_branch: gh-pages
+remote_name: origin
 site_description: Exploring different features of MCP servers and clients
 nav:
   - Home: index.md
