@@ -4,7 +4,11 @@ Exploring different features of MCP servers and clients
 
 ## License
 
-This is distributed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
+This project is licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
+
+Copyright (C) 2025 Anirban Ray
+
+See the [LICENSE](LICENSE) file for details.
 
 ## Usage
 
