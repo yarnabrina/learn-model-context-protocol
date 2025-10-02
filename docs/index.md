@@ -7,3 +7,4 @@ Welcome! This documentation will help you get started with the MCP learning proj
 - [Installation](installation.md)
 - [MCP Server](mcp-server.md)
 - [MCP Client](mcp-client.md)
+- [Examples](examples.md)
