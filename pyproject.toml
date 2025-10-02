@@ -51,8 +51,12 @@ monitoring = [
 dev = [
   "pip",
   "pre-commit",
+  { include-group = "docs" },
   { include-group = "format" },
   { include-group = "lint" },
+]
+docs = [
+  "mkdocs",
 ]
 format = [
   "black",
