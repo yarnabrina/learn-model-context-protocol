@@ -2,7 +2,13 @@
 
 Exploring different features of MCP servers and clients
 
-Check the [Examples](docs/examples.md) for usage.
+
+## Documentation
+
+- [Installation Guide](docs/installation.md) — How to set up your environment and install dependencies.
+- [Examples & Usage](docs/examples.md) — Step-by-step usage and sample sessions.
+- [MCP Server Configuration](docs/configurations/mcp-server.md)
+- [MCP Client Configuration](docs/configurations/mcp-client.md)
 
 ## License
 
