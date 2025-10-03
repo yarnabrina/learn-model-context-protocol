@@ -32,8 +32,8 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "mcp>=1.15.0,<2",
-  "openai>=1.109.1,<2",
+  "mcp>=1.16.0,<2",
+  "openai>=2.1.0,<3",
   "pydantic>=2.11.9,<3",
   "pydantic-settings>=2.11.0,<3",
   "rich>=14.1.0,<15",
@@ -44,29 +44,29 @@ cli = [
   "prompt-toolkit>=3.0.52,<4",
 ]
 monitoring = [
-  "langfuse>=3.5.2,<4",
+  "langfuse>=3.6.1,<4",
 ]
 
 [dependency-groups]
 dev = [
-  "pip",
-  "pre-commit",
+  "pip>=25.2",
+  "pre-commit>=4.3.0,<5",
   { include-group = "docs" },
   { include-group = "format" },
   { include-group = "lint" },
 ]
 docs = [
-  "mkdocs",
-  "mkdocs-material",
-  "Pygments",
+  "mkdocs>=1.6.1,<2",
+  "mkdocs-material>=9.6.21,<10",
+  "Pygments>=2.19.2,<3",
 ]
 format = [
-  "black",
-  "ruff",
+  "black>=25.9.0,<26",
+  "ruff>=0.13.3,<1",
 ]
 lint = [
-  "pylint",
-  "ruff",
+  "pylint>=3.3.8,<4",
+  "ruff>=0.13.3,<1",
 ]
 
 [project.scripts]
@@ -75,7 +75,7 @@ mcp-client = "mcp_learning:mcp_client_main"
 
 [build-system]
 requires = [
-  "uv_build>=0.8.22,<0.9",
+  "uv-build>=0.8.22,<0.9",
 ]
 build-backend = "uv_build"
 
