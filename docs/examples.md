@@ -12,7 +12,7 @@ uv run mcp-server --log_level INFO
 
 ## Starting the MCP Client
 
-> Replace `<YOUR-ENDPOINT-URL>` and `<YOUR-API-KEY>` with your actual values.
+> **Note:** Replace `<YOUR-ENDPOINT-URL>` and `<YOUR-API-KEY>` with your actual values.
 
 ```shell
 uv run mcp-client --language_model "gpt-4.1" azure_openai --azure_openai_endpoint "<YOUR-ENDPOINT-URL>" --azure_openai_deployment_name "gpt-4.1" --azure_openai_api_version "2025-01-01-preview" --azure_openai_api_key "<YOUR-API-KEY>"
