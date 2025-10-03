@@ -2,6 +2,8 @@
 
 Documentation for configuring the MCP server.
 
+> **Note:** This project uses [`uv`](https://github.com/astral-sh/uv) in examples for speed and convenience, but `uv` is **not required**. You can use `pip` and standard Python commands instead. See [Dependency Management](../dependency-management.md) for details.
+
 ```text
 uv run mcp-server --help
 # usage: mcp-server [-h] [--streamable_http_path str] [--json_response | --no-json_response]

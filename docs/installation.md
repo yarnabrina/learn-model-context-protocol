@@ -1,5 +1,7 @@
 # Installation
 
+> **Note:** This project uses [`uv`](https://github.com/astral-sh/uv) in examples for speed and convenience, but `uv` is **not required**. You can use `pip` and standard Python commands instead. See [Dependency Management](dependency-management.md) for details.
+
 Instructions for setting up the project environment and installing dependencies.
 
 ## Basic Setup

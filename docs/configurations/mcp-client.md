@@ -2,6 +2,8 @@
 
 Documentation for configuring the MCP client.
 
+> **Note:** This project uses [`uv`](https://github.com/astral-sh/uv) in examples for speed and convenience, but `uv` is **not required**. You can use `pip` and standard Python commands instead. See [Dependency Management](../dependency-management.md) for details.
+
 ```text
 uv run mcp-client --help
 # usage: mcp-client [-h] [--sampling | --no-sampling] [--elicitation | --no-elicitation] [--logging | --no-logging] [--progress | --no-progress]

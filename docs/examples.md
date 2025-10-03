@@ -2,6 +2,8 @@
 
 This page showcases example sessions using the MCP server and client.
 
+> **Note:** This project uses [`uv`](https://github.com/astral-sh/uv) in examples for speed and convenience, but `uv` is **not required**. You can use `pip` and standard Python commands instead. See [Dependency Management](dependency-management.md) for details.
+
 ## Starting the MCP Server
 
 ```shell

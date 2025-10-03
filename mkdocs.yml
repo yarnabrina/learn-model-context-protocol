@@ -15,6 +15,7 @@ nav:
   - Configurations:
       - MCP Server: configurations/mcp-server.md
       - MCP Client: configurations/mcp-client.md
+  - Dependency Management: dependency-management.md
 validation:
   omitted_files: warn
   absolute_links: relative_to_docs
