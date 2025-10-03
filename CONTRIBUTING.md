@@ -1,4 +1,4 @@
-# Contributing to MCP Exploration Project
+# Contributing to Model Context Protocol Exploration Project
 
 Thank you for your interest in contributing!
 

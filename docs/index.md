@@ -1,4 +1,4 @@
-# MCP Exploration Documentation
+# Model Context Protocol Exploration Documentation
 
 Welcome! This documentation will help you get started with the MCP learning project. Use the links below to quickly access the most relevant sections.
 
