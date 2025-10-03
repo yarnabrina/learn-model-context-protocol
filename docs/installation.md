@@ -28,10 +28,10 @@ Instructions for setting up the project environment and installing dependencies.
 
     ```shell
     # For enhanced CLI features (`prompt-toolkit`)
-    # uv sync --extra cli
+    uv sync --extra cli
 
     # For tracking and monitoring (`langfuse`)
-    # uv sync --extra monitoring
+    uv sync --extra monitoring
 
     # For all optional dependencies
     uv sync --all-extras

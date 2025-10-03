@@ -14,7 +14,7 @@ python3.13 -m venv .venv
 # On Windows
 .venv\Scripts\activate
 # On Unix or MacOS
-# source .venv/bin/activate
+source .venv/bin/activate
 
 # Upgrade pip and install dependencies (optional but recommended)
 pip install --upgrade pip setuptools wheel
@@ -24,11 +24,11 @@ pip install .
 
 # Optional: Install extra dependencies as needed
 # For enhanced CLI features (`prompt-toolkit`)
-# pip install .[cli]
+pip install ".[cli]"
 # For tracking and monitoring (`langfuse`)
-# pip install .[monitoring]
+pip install ".[monitoring]"
 # For all optional dependencies
-# pip install ".[cli,monitoring]"
+pip install ".[cli,monitoring]"
 ```
 
 ## Running the MCP Server and Client
