@@ -20,7 +20,7 @@ uv run mcp-client --language_model "gpt-4.1" azure_openai --azure_openai_endpoin
 
 Below is a sample interactive session with the MCP client. File paths and usernames have been anonymized for privacy.
 
-```shell
+```text
 [Bot] Type '/help' to see more information.
 
 [You] /help
@@ -185,7 +185,7 @@ Let me know if you want to see the list or need help with a specific server remo
 
 If you're interested, you can see the MCP server interactions here:
 
-```shell
+```text
 [10/02/25 23:07:30] INFO     Created new transport with session ID: 13950bfdfc994f5797c0f24da208f902                     streamable_http_manager.py:233
 INFO:     127.0.0.1:53308 - "POST /mcp HTTP/1.1" 200 OK
 INFO:     127.0.0.1:53311 - "GET /mcp HTTP/1.1" 200 OK

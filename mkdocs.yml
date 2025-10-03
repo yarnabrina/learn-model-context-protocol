@@ -22,7 +22,6 @@ validation:
   unrecognized_links: warn
 theme:
   name: material
-  locale: en
   palette:
     - media: "(prefers-color-scheme)"
       toggle:
@@ -38,6 +37,9 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
+  font:
+    text: Fira Sans
+    code: Fira Mono
   language: en
   direction: ltr
   features:
@@ -72,7 +74,10 @@ markdown_extensions:
   pymdownx.superfences:
 plugins:
   search:
+    enabled: false
     lang:
       - en
+  privacy:
+    enabled: true
 extra:
   generator: false

@@ -2,7 +2,7 @@
 
 Documentation for configuring the MCP client.
 
-```shell
+```text
 uv run mcp-client --help
 # usage: mcp-client [-h] [--sampling | --no-sampling] [--elicitation | --no-elicitation] [--logging | --no-logging] [--progress | --no-progress]
 #                   [--debug | --no-debug] [--log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--log_file {str,null}] [--language_model str]
@@ -54,7 +54,7 @@ uv run mcp-client --help
 
 The subcommands further give configurations for different LLM providers. For example:
 
-```shell
+```text
 uv run mcp-client hosted_openai --help
 # usage: mcp-client hosted_openai [-h] [--language_model_provider_type hosted_openai] [--hosted_openai_api_key str] [--hosted_openai_base_url str]
 #                                 [--hosted_openai_headers {dict,null}]

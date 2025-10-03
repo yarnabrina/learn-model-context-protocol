@@ -2,7 +2,7 @@
 
 Documentation for configuring the MCP server.
 
-```shell
+```text
 uv run mcp-server --help
 # usage: mcp-server [-h] [--streamable_http_path str] [--json_response | --no-json_response]
 #                 [--stateless_http | --no-stateless_http] [--host str] [--port int] [--debug | --no-debug]
