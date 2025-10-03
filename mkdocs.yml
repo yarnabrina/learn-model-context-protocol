@@ -1,0 +1,84 @@
+site_name: MCP Exploration
+site_url: https://yarnabrina.github.io/learn-model-context-protocol/
+repo_url: https://github.com/yarnabrina/learn-model-context-protocol
+repo_name: learn-model-context-protocol
+edit_uri: blob/main/docs/
+site_author: Anirban Ray
+copyright: Copyright (C) 2025 Anirban Ray
+remote_branch: gh-pages
+remote_name: origin
+site_description: Exploring different features of MCP servers and clients
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Examples: examples.md
+  - Configurations:
+      - MCP Server: configurations/mcp-server.md
+      - MCP Client: configurations/mcp-client.md
+  - Dependency Management: dependency-management.md
+validation:
+  omitted_files: warn
+  absolute_links: relative_to_docs
+  anchors: warn
+  unrecognized_links: warn
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  font:
+    text: Fira Sans
+    code: Fira Mono
+  language: en
+  direction: ltr
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.prune
+    - toc.follow
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - navigation.footer
+    - content.code.copy
+docs_dir: docs
+site_dir: site
+use_directory_urls: false
+strict: true
+dev_addr: 127.0.0.1:8000
+markdown_extensions:
+  toc:
+    permalink: true
+    title: Page Contents
+  pymdownx.highlight:
+    use_pygments: true
+    pygments_lang_class: true
+    auto_title: false
+    linenums: false
+  pymdownx.inlinehilite:
+  pymdownx.superfences:
+plugins:
+  search:
+    enabled: false
+    lang:
+      - en
+  privacy:
+    enabled: true
+extra:
+  generator: false
