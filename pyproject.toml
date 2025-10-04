@@ -23,7 +23,7 @@ keywords = [
   "mcp-client",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Framework :: Pydantic",
   "Framework :: Pydantic :: 2",
   "Intended Audience :: Developers",
