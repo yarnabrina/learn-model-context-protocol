@@ -359,7 +359,7 @@ class MCPClient:
         CreateMessageResult | ErrorData
             result of the sampling request, either a message result or an error data
         """
-        # TODO (@yarnabrina): find out to use context
+        # TODO (@yarnabrina): find out how to use context
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
 
@@ -492,7 +492,7 @@ class MCPClient:
         ElicitResult | ErrorData
             result of the elicitation request, either an elicitation result or an error data
         """
-        # TODO (@yarnabrina): find out to use context
+        # TODO (@yarnabrina): find out how to use context
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
 
