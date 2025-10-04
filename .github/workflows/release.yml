@@ -1,0 +1,27 @@
+name: release-workflow-name
+run-name: release workflow run name
+on:
+  workflow_dispatch:
+defaults:
+  run:
+    shell: bash
+jobs:
+  pypi-job-identifier:
+    name: pypi job name
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    environment: pypi-release
+    steps:
+      - name: checkout commit step
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: set up uv step
+        uses: astral-sh/setup-uv@v6
+      - name: install python step
+        run: uv python install 3.13
+      - name: build wheel step
+        run: uv build
+      - name: publish wheel step
+        run: uv publish
