@@ -359,7 +359,7 @@ class MCPClient:
         CreateMessageResult | ErrorData
             result of the sampling request, either a message result or an error data
         """
-        # TODO (@yarnabrina): find out to use context
+        # TODO (@yarnabrina): find out how to use context
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
 
@@ -392,8 +392,6 @@ class MCPClient:
 
         available_openai_tools = await self.get_all_openai_functions()
 
-        # TODO (@yarnabrina): find out to use parameters.includeContext
-        # https://github.com/yarnabrina/learn-model-context-protocol/issues/5
         match parameters.includeContext:
             case "none":
                 filtered_openai_tools = []
@@ -492,7 +490,7 @@ class MCPClient:
         ElicitResult | ErrorData
             result of the elicitation request, either an elicitation result or an error data
         """
-        # TODO (@yarnabrina): find out to use context
+        # TODO (@yarnabrina): find out how to use context
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
 

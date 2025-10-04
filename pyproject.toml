@@ -1,6 +1,12 @@
+[build-system]
+requires = [
+  "uv-build>=0.8.22,<0.9",
+]
+build-backend = "uv_build"
+
 [project]
 name = "mcp-learning"
-version = "0.0.6"
+version = "0.1.0"
 description = "Exploring different features of MCP servers and clients"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.13,<3.14"
@@ -17,12 +23,11 @@ keywords = [
   "mcp-client",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Framework :: Pydantic",
   "Framework :: Pydantic :: 2",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
-  "Private :: Do Not Upload",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
@@ -34,7 +39,7 @@ classifiers = [
 dependencies = [
   "mcp>=1.16.0,<2",
   "openai>=2.1.0,<3",
-  "pydantic>=2.11.9,<3",
+  "pydantic>=2.11.10,<3",
   "pydantic-settings>=2.11.0,<3",
   "rich>=14.1.0,<15",
 ]
@@ -69,15 +74,13 @@ lint = [
   "ruff>=0.13.3,<1",
 ]
 
+[project.urls]
+source = "https://github.com/yarnabrina/learn-model-context-protocol"
+documentation = "https://yarnabrina.github.io/learn-model-context-protocol/"
+
 [project.scripts]
 mcp-server = "mcp_learning:mcp_server_main"
 mcp-client = "mcp_learning:mcp_client_main"
-
-[build-system]
-requires = [
-  "uv-build>=0.8.22,<0.9",
-]
-build-backend = "uv_build"
 
 [tool.black]
 line-length = 99
