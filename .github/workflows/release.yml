@@ -10,6 +10,7 @@ jobs:
     name: pypi job name
     permissions:
       contents: read
+      id-token: write
     runs-on: ubuntu-latest
     environment: pypi-release
     steps:
