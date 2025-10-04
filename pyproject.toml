@@ -1,3 +1,9 @@
+[build-system]
+requires = [
+  "uv-build>=0.8.22,<0.9",
+]
+build-backend = "uv_build"
+
 [project]
 name = "mcp-learning"
 version = "0.0.6"
@@ -76,12 +82,6 @@ documentation = "https://yarnabrina.github.io/learn-model-context-protocol/"
 [project.scripts]
 mcp-server = "mcp_learning:mcp_server_main"
 mcp-client = "mcp_learning:mcp_client_main"
-
-[build-system]
-requires = [
-  "uv-build>=0.8.22,<0.9",
-]
-build-backend = "uv_build"
 
 [tool.black]
 line-length = 99
