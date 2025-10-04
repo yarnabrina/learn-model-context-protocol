@@ -392,8 +392,6 @@ class MCPClient:
 
         available_openai_tools = await self.get_all_openai_functions()
 
-        # TODO (@yarnabrina): find out to use parameters.includeContext
-        # https://github.com/yarnabrina/learn-model-context-protocol/issues/5
         match parameters.includeContext:
             case "none":
                 filtered_openai_tools = []
