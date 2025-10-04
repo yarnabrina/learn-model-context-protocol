@@ -69,6 +69,10 @@ lint = [
   "ruff>=0.13.3,<1",
 ]
 
+[project.urls]
+source = "https://github.com/yarnabrina/learn-model-context-protocol"
+documentation = "https://yarnabrina.github.io/learn-model-context-protocol/"
+
 [project.scripts]
 mcp-server = "mcp_learning:mcp_server_main"
 mcp-client = "mcp_learning:mcp_client_main"
