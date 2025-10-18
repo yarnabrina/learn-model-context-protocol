@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-  "uv-build>=0.8.22,<0.9",
+  "uv-build>=0.9.3,<0.10",
 ]
 build-backend = "uv_build"
 
@@ -37,11 +37,11 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "mcp>=1.16.0,<2",
-  "openai>=2.1.0,<3",
-  "pydantic>=2.11.10,<3",
+  "mcp>=1.18.0,<2",
+  "openai>=2.5.0,<3",
+  "pydantic>=2.12.3,<3",
   "pydantic-settings>=2.11.0,<3",
-  "rich>=14.1.0,<15",
+  "rich>=14.2.0,<15",
 ]
 
 [project.optional-dependencies]
@@ -49,7 +49,7 @@ cli = [
   "prompt-toolkit>=3.0.52,<4",
 ]
 monitoring = [
-  "langfuse>=3.6.1,<4",
+  "langfuse>=3.7.0,<4",
 ]
 
 [dependency-groups]
@@ -62,16 +62,16 @@ dev = [
 ]
 docs = [
   "mkdocs>=1.6.1,<2",
-  "mkdocs-material>=9.6.21,<10",
+  "mkdocs-material>=9.6.22,<10",
   "Pygments>=2.19.2,<3",
 ]
 format = [
   "black>=25.9.0,<26",
-  "ruff>=0.13.3,<1",
+  "ruff>=0.14.1,<1",
 ]
 lint = [
-  "pylint>=3.3.8,<4",
-  "ruff>=0.13.3,<1",
+  "pylint>=4.0.1,<5",
+  "ruff>=0.14.1,<1",
 ]
 
 [project.urls]
