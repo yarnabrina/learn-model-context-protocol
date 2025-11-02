@@ -9,12 +9,12 @@
             "transport": {
                 "type": "stdio"
             },
-            "version": "0.1.0"
+            "version": "0.1.1"
         }
     ],
     "repository": {
         "source": "github",
         "url": "https://github.com/yarnabrina/learn-model-context-protocol"
     },
-    "version": "0.1.0"
+    "version": "0.1.1"
 }
