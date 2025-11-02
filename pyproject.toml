@@ -8,7 +8,7 @@ build-backend = "uv_build"
 name = "mcp-learning"
 version = "0.1.0"
 description = "Exploring different features of MCP servers and clients"
-readme = { file = "README.md", content-type = "text/markdown" }
+readme = { file = "README-pypi.md", content-type = "text/markdown" }
 requires-python = ">=3.13,<3.14"
 license = "AGPL-3.0-or-later"
 authors = [
