@@ -26,4 +26,4 @@ Copyright (C) 2025 Anirban Ray
 
 See the [LICENSE](LICENSE) file for details.
 
-<!-- mcp-name: io.github.domdomegg/time-mcp-pypi -->
+<!-- mcp-name: io.github.yarnabrina/mcp-learning -->
