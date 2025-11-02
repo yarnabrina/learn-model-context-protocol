@@ -13,6 +13,11 @@ This project explores the features and usage of Model Context Protocol (MCP) ser
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development and contribution guidelines.
 
+## Links
+
+- [PyPI Package: mcp-learning](https://pypi.org/project/mcp-learning/)
+- [MCP Registry Entry](https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning)
+
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
@@ -20,3 +25,5 @@ This project is licensed under the GNU Affero General Public License v3.0 or lat
 Copyright (C) 2025 Anirban Ray
 
 See the [LICENSE](LICENSE) file for details.
+
+<!-- mcp-name: io.github.domdomegg/time-mcp-pypi -->

@@ -1,0 +1,20 @@
+{
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+    "description": "MCP server that can perform basic arithmetic operations and parse/evaluate arithmetic expressions.",
+    "name": "io.github.yarnabrina/mcp-learning",
+    "packages": [
+        {
+            "identifier": "mcp-learning",
+            "registryType": "pypi",
+            "transport": {
+                "type": "stdio"
+            },
+            "version": "0.1.1"
+        }
+    ],
+    "repository": {
+        "source": "github",
+        "url": "https://github.com/yarnabrina/learn-model-context-protocol"
+    },
+    "version": "0.1.1"
+}
