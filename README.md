@@ -15,8 +15,8 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development and contribution g
 
 ## Links
 
-- [PyPI Package: mcp-learning](https://pypi.org/project/mcp-learning/)
-- [MCP Registry Entry](https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning)
+- PyPI Package: [mcp-learning](https://pypi.org/project/mcp-learning/)
+- MCP Registry: [mcp-learning](https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning)
 
 ## License
 
@@ -25,5 +25,3 @@ This project is licensed under the GNU Affero General Public License v3.0 or lat
 Copyright (C) 2025 Anirban Ray
 
 See the [LICENSE](LICENSE) file for details.
-
-<!-- mcp-name: io.github.yarnabrina/mcp-learning -->
