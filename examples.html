@@ -1,0 +1,975 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Exploring different features of MCP servers and clients">
+      
+      
+        <meta name="author" content="Anirban Ray">
+      
+      
+        <link rel="canonical" href="https://yarnabrina.github.io/learn-model-context-protocol/examples.html">
+      
+      
+        <link rel="prev" href="installation.html">
+      
+      
+        <link rel="next" href="configurations/mcp-server.html">
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.23">
+    
+    
+      
+        <title>Examples - Model Context Protocol Exploration</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.84d31ad4.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        
+        <link rel="stylesheet" href="assets/external/fonts.googleapis.com/css.7ba2c938.css">
+        <style>:root{--md-text-font:"Fira Sans";--md-code-font:"Fira Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#examples" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="Model Context Protocol Exploration" class="md-header__button md-logo" aria-label="Model Context Protocol Exploration" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Model Context Protocol Exploration
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Examples
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/yarnabrina/learn-model-context-protocol" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    learn-model-context-protocol
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="installation.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="examples.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="configurations/mcp-server.html" class="md-tabs__link">
+          
+  
+  
+  Configurations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="dependency-management.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Dependency Management
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="Model Context Protocol Exploration" class="md-nav__button md-logo" aria-label="Model Context Protocol Exploration" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Model Context Protocol Exploration
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/yarnabrina/learn-model-context-protocol" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    learn-model-context-protocol
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Examples
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="examples.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Examples
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page Contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page Contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#starting-the-mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Starting the MCP Server
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#starting-the-mcp-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      Starting the MCP Client
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Session
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="configurations/mcp-server.html" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Configurations
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dependency-management.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dependency Management
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
+<p>This page showcases example sessions using the MCP server and client.</p>
+<blockquote>
+<p><strong>Note:</strong> This project uses <a href="https://github.com/astral-sh/uv"><code>uv</code></a> in examples for speed and convenience, but <code>uv</code> is <strong>not required</strong>. You can use <code>pip</code> and standard Python commands instead. See <a href="dependency-management.html">Dependency Management</a> for details.</p>
+</blockquote>
+<h2 id="starting-the-mcp-server">Starting the MCP Server<a class="headerlink" href="#starting-the-mcp-server" title="Permanent link">&para;</a></h2>
+<div class="language-shell highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mcp-server<span class="w"> </span>--log_level<span class="w"> </span>INFO
+</code></pre></div>
+<h2 id="starting-the-mcp-client">Starting the MCP Client<a class="headerlink" href="#starting-the-mcp-client" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Note:</strong> Replace <code>&lt;YOUR-ENDPOINT-URL&gt;</code> and <code>&lt;YOUR-API-KEY&gt;</code> with your actual values.</p>
+</blockquote>
+<div class="language-shell highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mcp-client<span class="w"> </span>--language_model<span class="w"> </span><span class="s2">&quot;gpt-4.1&quot;</span><span class="w"> </span>azure_openai<span class="w"> </span>--azure_openai_endpoint<span class="w"> </span><span class="s2">&quot;&lt;YOUR-ENDPOINT-URL&gt;&quot;</span><span class="w"> </span>--azure_openai_deployment_name<span class="w"> </span><span class="s2">&quot;gpt-4.1&quot;</span><span class="w"> </span>--azure_openai_api_version<span class="w"> </span><span class="s2">&quot;2025-01-01-preview&quot;</span><span class="w"> </span>--azure_openai_api_key<span class="w"> </span><span class="s2">&quot;&lt;YOUR-API-KEY&gt;&quot;</span>
+</code></pre></div>
+<h2 id="sample-session">Sample Session<a class="headerlink" href="#sample-session" title="Permanent link">&para;</a></h2>
+<p>Below is a sample interactive session with the MCP client. File paths and usernames have been anonymized for privacy.</p>
+<div class="language-text highlight"><pre><span></span><code>[Bot] Type &#39;/help&#39; to see more information.
+
+[You] /help
+[Bot] Available commands:
+/help
+    Displays this help message.
+
+/add_server &lt;server_name&gt; &lt;server_url&gt; [&lt;headers_json&gt;]
+    Adds or registers a new MCP server.
+
+/remove_server &lt;server_name&gt;
+    Removes an existing MCP server.
+
+/list_servers
+    Lists all configured MCP servers.
+
+/list_tools &lt;server_name&gt;
+    Lists available tools for a specific server.
+
+/describe_tool &lt;server_name&gt; &lt;tool_name&gt;
+    Displays details for a specific tool on a server.
+
+/quit
+    Exits the chat.
+
+
+[You] Hi, what can you do?
+[LLM] I can demonstrate the use of various tools available through MCP servers. These tools can perform tasks such as listing available servers, describing tools, adding or removing servers, and more.
+
+If you&#39;d like to see what commands are available, just type:
+/help
+
+Let me know what you&#39;d like to try!
+
+[You] /add_server math http://localhost:8000/mcp
+INFO     Received session ID: 13950bfdfc994f5797c0f24da208f902
+INFO     Negotiated protocol version: 2025-06-18
+[Bot] Added tools from MCP server math: [&#39;Add Numbers&#39;, &#39;Get Negative&#39;, &#39;Subtract Numbers&#39;, &#39;Multiply Numbers&#39;, &#39;Get Reciprocal&#39;, &#39;Divide Numbers&#39;,
+&#39;Parse Arithmetic Expression&#39;, &#39;Evaluate Arithmetic Expression&#39;, &#39;Power&#39;].
+
+[You] /list_tools math
+[Bot] Available tools for MCP server math: addition, negation, subtraction, multiplication, reciprocal, division, parse_expression,
+evaluate_expression, exponentiation
+
+[You] /describe_tool math exponentiation
+[Bot]
+{
+    &#39;name&#39;: &#39;exponentiation&#39;,
+    &#39;display_name&#39;: &#39;Power&#39;,
+    &#39;title&#39;: &#39;Power&#39;,
+    &#39;description&#39;: &#39;Raise a base to an exponent&#39;,
+    &#39;input_schema&#39;: {
+        &#39;properties&#39;: {&#39;base&#39;: {&#39;title&#39;: &#39;Base&#39;, &#39;type&#39;: &#39;number&#39;}, &#39;exponent&#39;: {&#39;title&#39;: &#39;Exponent&#39;, &#39;type&#39;: &#39;number&#39;}},
+        &#39;required&#39;: [&#39;base&#39;, &#39;exponent&#39;],
+        &#39;title&#39;: &#39;exponentiateArguments&#39;,
+        &#39;type&#39;: &#39;object&#39;
+    },
+    &#39;output_schema&#39;: {
+        &#39;description&#39;: &#39;Define result of exponentiation operation.&#39;,
+        &#39;properties&#39;: {&#39;power&#39;: {&#39;title&#39;: &#39;Power&#39;, &#39;type&#39;: &#39;number&#39;}},
+        &#39;required&#39;: [&#39;power&#39;],
+        &#39;title&#39;: &#39;ExponentiationResult&#39;,
+        &#39;type&#39;: &#39;object&#39;
+    },
+    &#39;annotations&#39;: {&#39;title&#39;: &#39;Exponentiation&#39;, &#39;readOnlyHint&#39;: True, &#39;destructiveHint&#39;: None, &#39;idempotentHint&#39;: None, &#39;openWorldHint&#39;: False},
+    &#39;server_name&#39;: &#39;math&#39;
+}
+
+[You] Let&#39;s say, I&#39;ve 5 mangoes and my brother has 3. If we want to redistribute equally, how should we formulate the problem?
+[LLM] Great question! To redistribute the mangoes equally between you and your brother, you need to:
+
+1. Add the total number of mangoes you both have.
+2. Divide the total by 2 (since there are two people).
+
+Let me demonstrate this using the available tools:
+
+- First, I&#39;ll use the addition tool to sum 5 and 3.
+- Then, I&#39;ll use the division tool to divide the total by 2.
+
+Let’s proceed with these calculations.
+INFO     Received session ID: bc69be9f25934ee6913d70faec8c8d78
+INFO     Negotiated protocol version: 2025-06-18
+INFO     Received session ID: 02e9b294a97d44ad98947440a94b771b
+INFO     Negotiated protocol version: 2025-06-18
+Here’s how the problem is formulated and solved using the tools:
+
+1. Addition: 5 mangoes (you) + 3 mangoes (your brother) = 8 mangoes in total.
+2. Division: 8 mangoes ÷ 2 people = 4 mangoes per person.
+
+So, after redistribution, each of you should get 4 mangoes. This demonstrates how to use addition and division tools to solve the problem. If you want to see the step-by-step tool usage or try another scenario, let me know!
+
+[You] Can you give this as an expression instead, before evaluation?
+[LLM]
+INFO     Received session ID: e86049390c88419b99424de03d3796fa
+INFO     Negotiated protocol version: 2025-06-18
+[Bot] Progress of call_lt0phM66QkWxVoxBlXVtKT7O: 1.0/2.0. Started MCP sampling..
+[Bot] Progress of call_lt0phM66QkWxVoxBlXVtKT7O: 2.0/2.0. Finished MCP sampling..
+You requested the expression before evaluation. The parsed arithmetic expression in postfix (reverse Polish) notation is:
+
+5 3 + 2 /
+
+This represents (5 + 3) divided by 2, ready for evaluation. If you want to see the evaluated result or another format, let me know!
+
+[You] Good, now evaluate this expression as is.
+[LLM]
+INFO     Received session ID: 54c9771e4b8a4e48a65e3c47ca96c003
+INFO     Negotiated protocol version: 2025-06-18
+The evaluated result of the expression 5 3 + 2 / is:
+
+4.0
+
+This confirms that each person should get 4 mangoes after redistribution. If you have more expressions to evaluate or want to try other math operations, just let me know!
+
+[You] Just curious, can you tell what is cube of that?
+[LLM]
+INFO     Received session ID: 06196fbf20c94aa39f1dda84cbd59c4e
+INFO     Negotiated protocol version: 2025-06-18
+The cube of 4 (which is 4^3) is:
+
+64.0
+
+If you want to explore more powers or other mathematical operations, feel free to ask!
+
+[You] Nice, let&#39;s find out it&#39;s square root.
+[LLM]
+INFO     Received session ID: 137be44a84cf44dcadb7e2e2ec2978f4
+INFO     Negotiated protocol version: 2025-06-18
+[Bot] Progress of call_b9UIJ31j5YJ8K849adJ9t1pV: 1.0/2.0. Starting MCP elicitation..
+[Bot] Thank you for your response! The MCP server has indicated that the exponent value you provided (0.5) is not supported because it is not an
+integer. To proceed, the server needs you to provide an integer value for the exponent.
+
+Could you please specify an integer exponent for the exponentiation operation? For example, you might enter 2, 3, or any other whole number.
+
+[You] Hmm, okay, let&#39;s ignore then.
+[Bot] Progress of call_b9UIJ31j5YJ8K849adJ9t1pV: 1.0/2.0. Finished MCP elicitation..
+ERROR    User decided to decline the correction request.
+WARNING  Failed tool call to tool_name=&#39;mcp-math-exponentiation&#39; with arguments={&#39;base&#39;: 64, &#39;exponent&#39;: 0.5}: Error executing tool exponentiation:
+         Only integer powers are currently supported..
+The tool call to find the square root of 64 (using exponent 0.5) failed because the exponentiation tool currently only supports integer exponents.
+
+However, mathematically, the square root of 64 is 8.
+
+If you want to try other integer exponents or need help with another calculation, let me know!
+
+[You] How do I disconnect the servers added?
+[LLM] To disconnect or remove servers that have been added, you can use the following command:
+
+/remove_server &lt;server_name&gt;
+
+Just replace &lt;server_name&gt; with the name of the server you want to remove. If you’d like to see a list of all currently configured servers, you can use:
+
+/list_servers
+
+Let me know if you want to see the list or need help with a specific server removal!
+
+[You] /remove_server math
+[Bot] MCP server math removal status: success.
+
+[You] /quit
+[Bot] Bye.
+</code></pre></div>
+<p>If you're interested, you can see the MCP server interactions here:</p>
+<div class="language-text highlight"><pre><span></span><code>[10/02/25 23:07:30] INFO     Created new transport with session ID: 13950bfdfc994f5797c0f24da208f902                     streamable_http_manager.py:233
+INFO:     127.0.0.1:53308 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53311 - &quot;GET /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53312 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+INFO:     127.0.0.1:53315 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:07:31] INFO     Processing request of type ListToolsRequest                                                                  server.py:664
+                    INFO     Terminating session: 13950bfdfc994f5797c0f24da208f902                                               streamable_http.py:630
+INFO:     127.0.0.1:53317 - &quot;DELETE /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:11:47] INFO     Created new transport with session ID: bc69be9f25934ee6913d70faec8c8d78                     streamable_http_manager.py:233
+INFO:     127.0.0.1:53780 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53783 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+INFO:     127.0.0.1:53784 - &quot;GET /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53786 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:11:48] INFO     Processing request of type CallToolRequest                                                                   server.py:664
+                    INFO     Received tool call for tool_name=&#39;addition&#39; with args=(), kwargs={&#39;left_addend&#39;: 5.0, &#39;right_addend&#39;: 3.0}.     main.py:61
+                    INFO     Succeeded tool call for tool_name=&#39;addition&#39; with result=AdditionResult(sum=8.0).                               main.py:77
+INFO:     127.0.0.1:53788 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+                    INFO     Processing request of type ListToolsRequest                                                                  server.py:664
+                    INFO     Terminating session: bc69be9f25934ee6913d70faec8c8d78                                               streamable_http.py:630
+INFO:     127.0.0.1:53790 - &quot;DELETE /mcp HTTP/1.1&quot; 200 OK
+                    INFO     Created new transport with session ID: 02e9b294a97d44ad98947440a94b771b                     streamable_http_manager.py:233
+INFO:     127.0.0.1:53792 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53795 - &quot;GET /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53796 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+INFO:     127.0.0.1:53801 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:11:49] INFO     Processing request of type CallToolRequest                                                                   server.py:664
+                    INFO     Received tool call for tool_name=&#39;division&#39; with args=(), kwargs={&#39;dividend&#39;: 8.0, &#39;divisor&#39;: 2.0}.             main.py:61
+                    INFO     Succeeded tool call for tool_name=&#39;division&#39; with result=DivisionResult(quotient=4.0).                          main.py:77
+INFO:     127.0.0.1:53803 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+                    INFO     Processing request of type ListToolsRequest                                                                  server.py:664
+[10/02/25 23:11:50] INFO     Terminating session: 02e9b294a97d44ad98947440a94b771b                                               streamable_http.py:630
+INFO:     127.0.0.1:53805 - &quot;DELETE /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:12:56] INFO     Created new transport with session ID: e86049390c88419b99424de03d3796fa                     streamable_http_manager.py:233
+INFO:     127.0.0.1:53935 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53939 - &quot;GET /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:53938 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+INFO:     127.0.0.1:53941 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+                    INFO     Processing request of type CallToolRequest                                                                   server.py:664
+                    INFO     Received tool call for tool_name=&#39;parse_expression&#39; with args=(), kwargs={&#39;text&#39;: &#39;(5 + 3) / 2&#39;, &#39;context&#39;:     main.py:61
+                             Context()}.
+INFO:     127.0.0.1:53948 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+[10/02/25 23:12:58] INFO     Succeeded tool call for tool_name=&#39;parse_expression&#39; with result=&#39;5 3 + 2 /&#39;.                                   main.py:77
+INFO:     127.0.0.1:53950 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:12:59] INFO     Processing request of type ListToolsRequest                                                                  server.py:664
+                    INFO     Terminating session: e86049390c88419b99424de03d3796fa                                               streamable_http.py:630
+INFO:     127.0.0.1:53952 - &quot;DELETE /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:13:34] INFO     Created new transport with session ID: 54c9771e4b8a4e48a65e3c47ca96c003                     streamable_http_manager.py:233
+INFO:     127.0.0.1:54017 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:54020 - &quot;GET /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:54021 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+INFO:     127.0.0.1:54025 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:13:35] INFO     Processing request of type CallToolRequest                                                                   server.py:664
+                    INFO     Received tool call for tool_name=&#39;evaluate_expression&#39; with args=(), kwargs={&#39;expression&#39;: &#39;5 3 + 2 /&#39;}.        main.py:61
+                    INFO     Succeeded tool call for tool_name=&#39;evaluate_expression&#39; with result=4.0.                                        main.py:77
+INFO:     127.0.0.1:54027 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+                    INFO     Processing request of type ListToolsRequest                                                                  server.py:664
+                    INFO     Terminating session: 54c9771e4b8a4e48a65e3c47ca96c003                                               streamable_http.py:630
+INFO:     127.0.0.1:54029 - &quot;DELETE /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:14:57] INFO     Created new transport with session ID: 06196fbf20c94aa39f1dda84cbd59c4e                     streamable_http_manager.py:233
+INFO:     127.0.0.1:54190 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:54196 - &quot;GET /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:54195 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+INFO:     127.0.0.1:54198 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:14:58] INFO     Processing request of type CallToolRequest                                                                   server.py:664
+                    INFO     Received tool call for tool_name=&#39;exponentiation&#39; with args=(), kwargs={&#39;base&#39;: 4.0, &#39;exponent&#39;: 3.0,           main.py:61
+                             &#39;context&#39;: Context()}.
+                    INFO     Succeeded tool call for tool_name=&#39;exponentiation&#39; with result=ExponentiationResult(power=64.0).                main.py:77
+INFO:     127.0.0.1:54200 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+                    INFO     Processing request of type ListToolsRequest                                                                  server.py:664
+                    INFO     Terminating session: 06196fbf20c94aa39f1dda84cbd59c4e                                               streamable_http.py:630
+INFO:     127.0.0.1:54202 - &quot;DELETE /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:15:19] INFO     Created new transport with session ID: 137be44a84cf44dcadb7e2e2ec2978f4                     streamable_http_manager.py:233
+INFO:     127.0.0.1:54243 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:54247 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+INFO:     127.0.0.1:54246 - &quot;GET /mcp HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:54249 - &quot;POST /mcp HTTP/1.1&quot; 200 OK
+[10/02/25 23:15:20] INFO     Processing request of type CallToolRequest                                                                   server.py:664
+                    INFO     Received tool call for tool_name=&#39;exponentiation&#39; with args=(), kwargs={&#39;base&#39;: 64.0, &#39;exponent&#39;: 0.5,          main.py:61
+                             &#39;context&#39;: Context()}.
+INFO:     127.0.0.1:54283 - &quot;POST /mcp HTTP/1.1&quot; 202 Accepted
+[10/02/25 23:15:38] ERROR    Failed tool call for tool_name=&#39;exponentiation&#39;.                                                                main.py:73
+                             ╭───────────────────────────────────── Traceback (most recent call last) ─────────────────────────────────────╮
+                             │ C:\Users\&lt;YOUR-USERNAME&gt;\path\to\repo\mcp-exploration\src\mcp_learning\mcp_server\main.py:65 in logged_tool │
+                             │                                                                                                             │
+                             │    62 │   │                                                                                                 │
+                             │    63 │   │   try:                                                                                          │
+                             │    64 │   │   │   if asyncio.iscoroutinefunction(tool_callable):                                            │
+                             │ ❱  65 │   │   │   │   result = await tool_callable(*args, **kwargs)                                         │
+                             │    66 │   │   │   else:                                                                                     │
+                             │    67 │   │   │   │   result = tool_callable(*args, **kwargs)                                               │
+                             │    68 │   │   except ExceptionGroup:                                                                        │
+                             │                                                                                                             │
+                             │ C:\Users\&lt;YOUR-USERNAME&gt;\path\to\repo\mcp-exploration\.venv\Lib\site-packages\pydantic\_internal\_validate_ │
+                             │ call.py:34 in wrapper_function                                                                              │
+                             │                                                                                                             │
+                             │    31 │   │                                                                                                 │
+                             │    32 │   │   @functools.wraps(wrapped)                                                                     │
+                             │    33 │   │   async def wrapper_function(*args, **kwargs):  # type: ignore                                  │
+                             │ ❱  34 │   │   │   return await wrapper(*args, **kwargs)                                                     │
+                             │    35 │   else:                                                                                             │
+                             │    36 │   │                                                                                                 │
+                             │    37 │   │   @functools.wraps(wrapped)                                                                     │
+                             │                                                                                                             │
+                             │ C:\Users\&lt;YOUR-USERNAME&gt;\path\to\repo\mcp-exploration\.venv\Lib\site-packages\pydantic\_internal\_validate_ │
+                             │ call.py:122 in return_val_wrapper                                                                           │
+                             │                                                                                                             │
+                             │   119 │   │   │   if inspect.iscoroutinefunction(self.function):                                            │
+                             │   120 │   │   │   │                                                                                         │
+                             │   121 │   │   │   │   async def return_val_wrapper(aw: Awaitable[Any]) -&gt; None:                             │
+                             │ ❱ 122 │   │   │   │   │   return validator.validate_python(await aw)                                        │
+                             │   123 │   │   │   │                                                                                         │
+                             │   124 │   │   │   │   self.__return_pydantic_validator__ = return_val_wrapper                               │
+                             │   125 │   │   │   else:                                                                                     │
+                             │                                                                                                             │
+                             │ C:\Users\&lt;YOUR-USERNAME&gt;\path\to\repo\mcp-exploration\src\mcp_learning\mcp_server\exponentiation.py:72 in   │
+                             │ exponentiate                                                                                                │
+                             │                                                                                                             │
+                             │   69 │   │   │   │   │   f&quot;User decided to {elicitation_result.action} the correction                       │
+                             │      request.&quot;                                                                                              │
+                             │   70 │   │   │   │   )                                                                                      │
+                             │   71 │   │   │   │                                                                                          │
+                             │ ❱ 72 │   │   │   │   raise NotImplementedError(&quot;Only integer powers are currently                           │
+                             │      supported.&quot;)                                                                                           │
+                             │   73 │   │                                                                                                  │
+                             │   74 │   │   exponent = corrected_exponent                                                                  │
+                             │   75                                                                                                        │
+                             ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                             NotImplementedError: Only integer powers are currently supported.
+                    INFO     Terminating session: 137be44a84cf44dcadb7e2e2ec2978f4                                               streamable_http.py:630
+INFO:     127.0.0.1:54285 - &quot;DELETE /mcp HTTP/1.1&quot; 200 OK
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="installation.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Installation">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Installation
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="configurations/mcp-server.html" class="md-footer__link md-footer__link--next" aria-label="Next: MCP Server">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                MCP Server
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright (C) 2025 Anirban Ray
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": ".", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.prune", "toc.follow", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "navigation.footer", "content.code.copy"], "search": "assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

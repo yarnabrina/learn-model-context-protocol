@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://yarnabrina.github.io/learn-model-context-protocol/index.html</loc>
+         <lastmod>2025-11-09</lastmod>
+    </url>
+    <url>
+         <loc>https://yarnabrina.github.io/learn-model-context-protocol/dependency-management.html</loc>
+         <lastmod>2025-11-09</lastmod>
+    </url>
+    <url>
+         <loc>https://yarnabrina.github.io/learn-model-context-protocol/examples.html</loc>
+         <lastmod>2025-11-09</lastmod>
+    </url>
+    <url>
+         <loc>https://yarnabrina.github.io/learn-model-context-protocol/installation.html</loc>
+         <lastmod>2025-11-09</lastmod>
+    </url>
+    <url>
+         <loc>https://yarnabrina.github.io/learn-model-context-protocol/configurations/mcp-client.html</loc>
+         <lastmod>2025-11-09</lastmod>
+    </url>
+    <url>
+         <loc>https://yarnabrina.github.io/learn-model-context-protocol/configurations/mcp-server.html</loc>
+         <lastmod>2025-11-09</lastmod>
+    </url>
+</urlset>
