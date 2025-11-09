@@ -26,9 +26,3 @@ jobs:
         run: uv build
       - name: publish wheel step
         run: uv publish
-      - name: install MCP publisher step
-        run: curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
-      - name: login to MCP registry step
-        run: ./mcp-publisher login github-oidc
-      - name: publish to MCP registry step
-        run: ./mcp-publisher publish
