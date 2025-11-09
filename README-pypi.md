@@ -15,8 +15,8 @@ Please see [CONTRIBUTING.md](https://github.com/yarnabrina/learn-model-context-p
 
 ## Links
 
-- [PyPI Package: mcp-learning](https://pypi.org/project/mcp-learning/)
-- [MCP Registry Entry](https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning)
+- PyPI Package: [mcp-learning](https://pypi.org/project/mcp-learning/)
+- MCP Registry: [mcp-learning](https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning)
 
 ## License
 
