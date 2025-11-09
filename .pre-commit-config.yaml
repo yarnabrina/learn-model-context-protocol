@@ -191,4 +191,4 @@ repos:
 default_language_version:
   python: python3.13
 fail_fast: false
-minimum_pre_commit_version: 4.3.0
+minimum_pre_commit_version: 4.4.0
