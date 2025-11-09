@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: set up uv step
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
       - name: install python step
         run: uv python install 3.13
       - name: build wheel step
