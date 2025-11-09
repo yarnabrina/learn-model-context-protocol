@@ -44,40 +44,19 @@
                     "description": "Hostname to bind the streamable HTTP server.",
                     "name": "--host",
                     "type": "named",
-                    "value": "{host}",
-                    "variables": {
-                        "host": {
-                            "default": "127.0.0.1",
-                            "description": "Hostname for incoming MCP connections.",
-                            "format": "string"
-                        }
-                    }
+                    "value": "{host}"
                 },
                 {
                     "description": "Port number to expose the streamable HTTP server on.",
                     "name": "--port",
                     "type": "named",
-                    "value": "{port}",
-                    "variables": {
-                        "port": {
-                            "default": "8000",
-                            "description": "TCP port for incoming MCP connections.",
-                            "format": "number"
-                        }
-                    }
+                    "value": "{port}"
                 },
                 {
                     "description": "Path prefix used by the streamable HTTP server.",
                     "name": "--streamable_http_path",
                     "type": "named",
-                    "value": "{streamable_http_path}",
-                    "variables": {
-                        "streamable_http_path": {
-                            "default": "/mcp",
-                            "description": "URL path to mount the streamable HTTP endpoint.",
-                            "format": "string"
-                        }
-                    }
+                    "value": "{streamable_http_path}"
                 },
                 {
                     "choices": [
@@ -91,20 +70,35 @@
                     "description": "Log level for server output.",
                     "name": "--log_level",
                     "type": "named",
-                    "value": "{log_level}",
-                    "variables": {
-                        "log_level": {
-                            "default": "WARNING",
-                            "description": "Log level for the MCP server.",
-                            "format": "string"
-                        }
-                    }
+                    "value": "{log_level}"
                 }
             ],
             "runtimeHint": "uvx",
             "transport": {
                 "type": "streamable-http",
                 "url": "http://{host}:{port}{streamable_http_path}"
+            },
+            "variables": {
+                "host": {
+                    "default": "127.0.0.1",
+                    "description": "Hostname for incoming MCP connections.",
+                    "format": "string"
+                },
+                "log_level": {
+                    "default": "WARNING",
+                    "description": "Log level for the MCP server.",
+                    "format": "string"
+                },
+                "port": {
+                    "default": "8000",
+                    "description": "TCP port for incoming MCP connections.",
+                    "format": "number"
+                },
+                "streamable_http_path": {
+                    "default": "/mcp",
+                    "description": "URL path to mount the streamable HTTP endpoint.",
+                    "format": "string"
+                }
             },
             "version": "0.2.0"
         }
