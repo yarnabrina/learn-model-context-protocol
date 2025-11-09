@@ -106,7 +106,7 @@
                 "type": "streamable-http",
                 "url": "http://{host}:{port}{streamable_http_path}"
             },
-            "version": "0.1.2"
+            "version": "0.2.0"
         }
     ],
     "repository": {
@@ -114,6 +114,6 @@
         "url": "https://github.com/yarnabrina/learn-model-context-protocol"
     },
     "title": "Learning Model Context Protocol",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "websiteUrl": "https://yarnabrina.github.io/learn-model-context-protocol/"
 }
