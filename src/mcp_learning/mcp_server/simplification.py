@@ -1,6 +1,7 @@
 """Provide functionality to parse and solve arithmetic expressions from natural language."""
 
 import enum
+import typing
 
 import pydantic
 from mcp.server.fastmcp import Context
@@ -85,7 +86,7 @@ class InvalidOperatorError(Exception):
         the unsupported operator that caused the error
     """
 
-    def __init__(self: "InvalidOperatorError", operator: str) -> None:
+    def __init__(self: typing.Self, operator: str) -> None:
         super().__init__(f"Unsupported operator encountered: {operator=}.")
 
 

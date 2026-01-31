@@ -6,6 +6,7 @@ import functools
 import json
 import re
 import sys
+import typing
 
 from .client import MCPClient, Status
 from .orchestrator import OpenAIOrchestrator
@@ -91,7 +92,7 @@ class ChatInterface:
         orchestrator instance for handling language model interactions
     """
 
-    def __init__(self: "ChatInterface", settings: Configurations) -> None:
+    def __init__(self: typing.Self, settings: Configurations) -> None:
         self.settings = settings
 
         self.langfuse_client = get_monitoring_client(settings)
@@ -104,7 +105,7 @@ class ChatInterface:
         )
 
     @functools.cached_property
-    def command_patterns(self: "ChatInterface") -> dict[ChatCommand, str]:
+    def command_patterns(self: typing.Self) -> dict[ChatCommand, str]:
         """Define regex patterns for chat commands.
 
         Returns
@@ -125,7 +126,7 @@ class ChatInterface:
         }
 
     def parse_command(
-        self: "ChatInterface", user_input: str
+        self: typing.Self, user_input: str
     ) -> tuple[ChatCommand | None, dict[str, str]]:
         """Parse user input to identify commands and extract parameters.
 
@@ -149,8 +150,112 @@ class ChatInterface:
 
         return None, {}
 
-    async def handle_command(  # noqa: C901, PLR0912
-        self: "ChatInterface", command: ChatCommand, command_inputs: dict
+    async def serve_help_command(self: typing.Self) -> None:
+        """Serve the help command by displaying available commands."""
+        bot_response(f"Available commands: {HELP_MESSAGE}")
+
+    async def serve_add_server_command(self: typing.Self, command_inputs: dict) -> None:
+        """Serve the add server command by adding a new MCP server.
+
+        Parameters
+        ----------
+        command_inputs : dict
+            dictionary of command inputs extracted from user input
+        """
+        server_name: str = command_inputs["server_name"]
+        server_url: str = command_inputs["server_url"]
+        server_headers: str = command_inputs["server_headers"]
+
+        try:
+            parsed_server_headers: dict = json.loads(server_headers) if server_headers else {}
+        except json.JSONDecodeError:
+            bot_response("Invalid headers format. Please provide a valid JSON object.")
+
+            return
+
+        addition_status, server_tools = await self.mcp_client.add_mcp_server(
+            server_name, server_url, server_headers=parsed_server_headers
+        )
+
+        if addition_status == Status.FAILURE:
+            bot_response(f"MCP server {server_name} addition status: {addition_status}.")
+        elif server_tools:
+            bot_response(f"Added tools from MCP server {server_name}: {server_tools}.")
+        else:
+            bot_response(f"No tools in MCP server {server_name}.")
+
+    async def serve_remove_server_command(self: typing.Self, command_inputs: dict) -> None:
+        """Serve the remove server command by removing an existing MCP server.
+
+        Parameters
+        ----------
+        command_inputs : dict
+            dictionary of command inputs extracted from user input
+        """
+        server_name: str = command_inputs["server_name"]
+
+        removal_status = self.mcp_client.remove_mcp_server(server_name)
+
+        bot_response(f"MCP server {server_name} removal status: {removal_status}.")
+
+    async def serve_list_servers_command(self: typing.Self) -> None:
+        """Serve the list servers command by listing all configured MCP servers."""
+        servers = self.mcp_client.list_mcp_servers()
+
+        if servers:
+            bot_response(servers)
+        else:
+            bot_response("No MCP servers configured.")
+
+    async def list_tools_command(self: typing.Self, command_inputs: dict) -> None:
+        """Serve the list tools command by listing available tools for a specific server.
+
+        Parameters
+        ----------
+        command_inputs : dict
+            dictionary of command inputs extracted from user input
+        """
+        server_name: str = command_inputs["server_name"]
+
+        listing_status, server_tools = self.mcp_client.list_mcp_server_tools(server_name)
+
+        if listing_status == Status.FAILURE:
+            bot_response(f"MCP server {server_name} tools listing status: {listing_status}.")
+        elif server_tools:
+            bot_response(
+                f"Available tools for MCP server {server_name}: {', '.join(server_tools)}"
+            )
+        else:
+            bot_response(f"No tools in MCP server {server_name}.")
+
+    async def serve_describe_tool_command(self: typing.Self, command_inputs: dict) -> None:
+        """Serve the describe tool command by providing details for a specific tool.
+
+        Parameters
+        ----------
+        command_inputs : dict
+            dictionary of command inputs extracted from user input
+        """
+        server_name: str = command_inputs["server_name"]
+        tool_name: str = command_inputs["tool_name"]
+
+        description_status, tool_description = self.mcp_client.describe_mcp_server_tool(
+            server_name, tool_name
+        )
+
+        if description_status == Status.FAILURE:
+            bot_response(f"Missing tool {tool_name} in MCP server {server_name}.")
+        else:
+            bot_response(tool_description)
+
+    async def serve_quit_command(self: typing.Self) -> None:
+        """Serve the quit command by exiting the chat interface."""
+        bot_response("Bye.")
+
+        sys.exit()
+
+    async def handle_command(
+        self: typing.Self, command: ChatCommand, command_inputs: dict
     ) -> None:
         """Handle the command and provide appropriate responses.
 
@@ -163,77 +268,21 @@ class ChatInterface:
         """
         match command:
             case ChatCommand.HELP:
-                bot_response(f"Available commands: {HELP_MESSAGE}")
+                await self.serve_help_command()
             case ChatCommand.ADD_SERVER:
-                server_name: str = command_inputs["server_name"]
-                server_url: str = command_inputs["server_url"]
-                server_headers: str = command_inputs["server_headers"]
-
-                try:
-                    parsed_server_headers: dict = (
-                        json.loads(server_headers) if server_headers else {}
-                    )
-                except json.JSONDecodeError:
-                    bot_response("Invalid headers format. Please provide a valid JSON object.")
-
-                    return
-
-                addition_status, server_tools = await self.mcp_client.add_mcp_server(
-                    server_name, server_url, server_headers=parsed_server_headers
-                )
-
-                if addition_status == Status.FAILURE:
-                    bot_response(f"MCP server {server_name} addition status: {addition_status}.")
-                elif server_tools:
-                    bot_response(f"Added tools from MCP server {server_name}: {server_tools}.")
-                else:
-                    bot_response(f"No tools in MCP server {server_name}.")
+                await self.serve_add_server_command(command_inputs)
             case ChatCommand.REMOVE_SERVER:
-                server_name: str = command_inputs["server_name"]
-
-                removal_status = self.mcp_client.remove_mcp_server(server_name)
-
-                bot_response(f"MCP server {server_name} removal status: {removal_status}.")
+                await self.serve_remove_server_command(command_inputs)
             case ChatCommand.LIST_SERVERS:
-                servers = self.mcp_client.list_mcp_servers()
-
-                if servers:
-                    bot_response(servers)
-                else:
-                    bot_response("No MCP servers configured.")
+                await self.serve_list_servers_command()
             case ChatCommand.LIST_TOOLS:
-                server_name: str = command_inputs["server_name"]
-
-                listing_status, server_tools = self.mcp_client.list_mcp_server_tools(server_name)
-
-                if listing_status == Status.FAILURE:
-                    bot_response(
-                        f"MCP server {server_name} tools listing status: {listing_status}."
-                    )
-                elif server_tools:
-                    bot_response(
-                        f"Available tools for MCP server {server_name}: {', '.join(server_tools)}"
-                    )
-                else:
-                    bot_response(f"No tools in MCP server {server_name}.")
+                await self.list_tools_command(command_inputs)
             case ChatCommand.DESCRIBE_TOOL:
-                server_name: str = command_inputs["server_name"]
-                tool_name: str = command_inputs["tool_name"]
-
-                description_status, tool_description = self.mcp_client.describe_mcp_server_tool(
-                    server_name, tool_name
-                )
-
-                if description_status == Status.FAILURE:
-                    bot_response(f"Missing tool {tool_name} in MCP server {server_name}.")
-                else:
-                    bot_response(tool_description)
+                await self.serve_describe_tool_command(command_inputs)
             case ChatCommand.QUIT:
-                bot_response("Bye.")
+                await self.serve_quit_command()
 
-                sys.exit()
-
-    async def start_interactive_chat(self: "ChatInterface") -> None:
+    async def start_interactive_chat(self: typing.Self) -> None:
         """Manage the interactive chat loop."""
         bot_response("Type '/help' to see more information.")
 
