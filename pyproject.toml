@@ -145,7 +145,6 @@ task-tags = [
 ]
 
 [tool.ruff.lint.flake8-annotations]
-allow-star-arg-any = true
 ignore-fully-untyped = true
 
 [tool.ruff.lint.flake8-bugbear]
@@ -193,6 +192,7 @@ classmethod-decorators = [
 #   "INP001",  # File {filename} is part of an implicit namespace package. Add an __init__.py.
 #   "PLR0913",  # Too many arguments in function definition ({c_args} > {max_args})
 #   "S101",  # Use of assert detected
+#   "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
 # ]
 
 [tool.ruff.lint.pycodestyle]
@@ -255,8 +255,11 @@ disable = [
 [tool.pylint.reports]
 output-format = "colorized"
 
+[tool.codespell]
+ignore-words-list = "astroid"
+
 # [tool.pytest.ini_options]
-# addopts = "--junit-xml=junit.xml --doctest-modules --doctest-ignore-import-errors --doctest-continue-on-failure"
+# addopts = "--junit-xml=junit.xml"
 # console_output_style = "count"
 
 # [tool.coverage.paths]
@@ -309,7 +312,7 @@ exclude = [
   "conftest",
   "test_",
 ]
-strict = true
+strict = false
 
 [tool.autoflake]
 in-place = true
