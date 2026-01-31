@@ -31,7 +31,7 @@ def create_rich_handler(level: int | str = logging.NOTSET) -> rich.logging.RichH
 class DeactivateFilter(logging.Filter):
     """Define filter to disable logging handlers."""
 
-    def filter(self: "DeactivateFilter", record: logging.LogRecord) -> typing.Literal[False]:
+    def filter(self: typing.Self, record: logging.LogRecord) -> typing.Literal[False]:
         """Disable records.
 
         Parameters
@@ -52,7 +52,7 @@ class DeactivateFilter(logging.Filter):
 class SuppressTracebackFilter(logging.Filter):
     """Define filter to suppress traceback in logs."""
 
-    def filter(self: "SuppressTracebackFilter", record: logging.LogRecord) -> logging.LogRecord:
+    def filter(self: typing.Self, record: logging.LogRecord) -> logging.LogRecord:
         """Remove traceback from log records.
 
         Parameters

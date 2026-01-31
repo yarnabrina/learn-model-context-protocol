@@ -5,6 +5,7 @@ import functools
 import http
 import json
 import logging
+import typing
 
 import pydantic
 from mcp import ClientSession
@@ -147,7 +148,7 @@ class MCPClient:
     """
 
     def __init__(
-        self: "MCPClient", settings: Configurations, langfuse_client: MonitoringClient
+        self: typing.Self, settings: Configurations, langfuse_client: MonitoringClient
     ) -> None:
         self.settings = settings
         self.langfuse_client = langfuse_client
@@ -160,7 +161,7 @@ class MCPClient:
         self.tool_call_events: dict[str, dict] = {}
 
     async def add_mcp_server(
-        self: "MCPClient", server_name: str, server_url: str, server_headers: dict | None = None
+        self: typing.Self, server_name: str, server_url: str, server_headers: dict | None = None
     ) -> tuple[Status, list[str]]:
         """Add a new MCP server and retrieve its available tools.
 
@@ -220,7 +221,7 @@ class MCPClient:
 
         return Status.SUCCESS, [tool.display_name for tool in processed_server_tools]
 
-    def list_mcp_servers(self: "MCPClient") -> dict[str, dict]:
+    def list_mcp_servers(self: typing.Self) -> dict[str, dict]:
         """List all added MCP servers.
 
         Returns
@@ -233,7 +234,7 @@ class MCPClient:
             for server_name, server_details in self.mcp_servers.items()
         }
 
-    def remove_mcp_server(self: "MCPClient", server_name: str) -> Status:
+    def remove_mcp_server(self: typing.Self, server_name: str) -> Status:
         """Remove an MCP server by its name.
 
         Parameters
@@ -257,7 +258,7 @@ class MCPClient:
         return Status.SUCCESS
 
     def list_mcp_server_tools(
-        self: "MCPClient", server_name: str
+        self: typing.Self, server_name: str
     ) -> tuple[Status, dict[str, str]]:
         """List all tools available on a specific MCP server.
 
@@ -283,7 +284,7 @@ class MCPClient:
         return Status.SUCCESS, {tool.name: tool.display_name for tool in server_tools}
 
     def describe_mcp_server_tool(
-        self: "MCPClient", server_name: str, tool_name: str
+        self: typing.Self, server_name: str, tool_name: str
     ) -> tuple[Status, dict | None]:
         """Describe a specific tool available on an MCP server.
 
@@ -316,7 +317,7 @@ class MCPClient:
 
         return Status.FAILURE, None
 
-    async def get_all_openai_functions(self: "MCPClient") -> list[ChatCompletionToolParam]:
+    async def get_all_openai_functions(self: typing.Self) -> list[ChatCompletionToolParam]:
         """Get all MCP tools as OpenAI API compatible function definitions.
 
         Returns
@@ -338,7 +339,7 @@ class MCPClient:
         ]
 
     async def sampling_handler(
-        self: "MCPClient",
+        self: typing.Self,
         tool_call_id: str,
         context: RequestContext,
         parameters: CreateMessageRequestParams,
@@ -469,7 +470,7 @@ class MCPClient:
         )
 
     async def elicitation_handler(
-        self: "MCPClient",
+        self: typing.Self,
         tool_call_id: str,
         context: RequestContext,
         parameters: ElicitRequestParams,
@@ -681,7 +682,7 @@ class MCPClient:
         bot_response(progress_message)
 
     async def execute_tool_call(  # noqa: PLR0911
-        self: "MCPClient", tool_call_id: str, tool_name: str, arguments: dict
+        self: typing.Self, tool_call_id: str, tool_name: str, arguments: dict
     ) -> str:
         """Execute a tool call on an MCP server.
 

@@ -3,6 +3,7 @@
 import collections.abc
 import functools
 import logging
+import typing
 
 import openai
 import pydantic_settings
@@ -39,11 +40,11 @@ class OpenAIClient:
         OpenAI client instance configured based on the provided settings
     """
 
-    def __init__(self: "OpenAIClient", settings: Configurations) -> None:
+    def __init__(self: typing.Self, settings: Configurations) -> None:
         self.settings = settings
 
     @functools.cached_property
-    def openai_client(self: "OpenAIClient") -> openai.AsyncOpenAI:
+    def openai_client(self: typing.Self) -> openai.AsyncOpenAI:
         """Initialize the OpenAI client based on the provider type.
 
         Returns
@@ -75,7 +76,7 @@ class OpenAIClient:
         return openai_client
 
     def formulate_openai_inputs(
-        self: "OpenAIClient",
+        self: typing.Self,
         chat_history: list[ChatCompletionMessageParam],
         stream: bool,
         system_prompt: str | None = None,
@@ -135,7 +136,7 @@ class OpenAIClient:
         return openai_inputs
 
     async def get_non_streaming_openai_response(
-        self: "OpenAIClient",
+        self: typing.Self,
         chat_history: list[ChatCompletionMessageParam],
         system_prompt: str | None = None,
         tools: list[ChatCompletionToolParam] | None = None,
@@ -173,7 +174,7 @@ class OpenAIClient:
         return non_streaming_chat_completion
 
     async def get_streaming_openai_response(
-        self: "OpenAIClient",
+        self: typing.Self,
         chat_history: list[ChatCompletionMessageParam],
         system_prompt: str | None = None,
         tools: list[ChatCompletionToolParam] | None = None,

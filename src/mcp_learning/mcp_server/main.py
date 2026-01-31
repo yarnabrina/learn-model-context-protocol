@@ -95,14 +95,14 @@ class ArithmeticMCPServer:
         MCP server instance configured based on the provided settings
     """
 
-    def __init__(self: "ArithmeticMCPServer", settings: Configurations) -> None:
+    def __init__(self: typing.Self, settings: Configurations) -> None:
         self.settings = settings
 
         self.mcp_server: FastMCP = self.initiate_mcp_server()
 
         self.configure_mcp_server_tools()
 
-    def initiate_mcp_server(self: "ArithmeticMCPServer") -> FastMCP:
+    def initiate_mcp_server(self: typing.Self) -> FastMCP:
         """Initialize the MCP server with the provided settings.
 
         Returns
@@ -125,7 +125,7 @@ class ArithmeticMCPServer:
             stateless_http=self.settings.stateless_http,
         )
 
-    def configure_mcp_server_tools(self: "ArithmeticMCPServer") -> None:
+    def configure_mcp_server_tools(self: typing.Self) -> None:
         """Configure and add arithmetic operation tools to the MCP server."""
         self.mcp_server.add_tool(
             create_logged_tool(add_numbers, "addition"),

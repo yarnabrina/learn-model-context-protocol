@@ -1,6 +1,7 @@
 """Define inverse elements and their properties."""
 
 import enum
+import typing
 
 import pydantic
 
@@ -18,7 +19,7 @@ class InverseElements(enum.IntEnum):
 class DivisionByZeroError(Exception):
     """Raised when multiplicative inverse is attempted on additive identity."""
 
-    def __init__(self: "DivisionByZeroError") -> None:
+    def __init__(self: typing.Self) -> None:
         super().__init__("Multiplicative inverse is not defined for additive identity.")
 
 

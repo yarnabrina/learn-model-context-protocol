@@ -3,6 +3,7 @@
 import collections.abc
 import json
 import logging
+import typing
 
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
@@ -44,7 +45,7 @@ class OpenAIOrchestrator:
     """
 
     def __init__(
-        self: "OpenAIOrchestrator",
+        self: typing.Self,
         settings: Configurations,
         langfuse_client: MonitoringClient,
         mcp_client: MCPClient,
@@ -59,7 +60,7 @@ class OpenAIOrchestrator:
         self.conversation_history: list[ChatCompletionMessageParam] = []
 
     async def call_openai(
-        self: "OpenAIOrchestrator",
+        self: typing.Self,
     ) -> collections.abc.AsyncGenerator[tuple[str | None, str | None, list[dict]]]:
         """Call OpenAI API with the current conversation history and available tools.
 
@@ -110,7 +111,7 @@ class OpenAIOrchestrator:
             yield finish_reason, None, [tool_call for _, tool_call in tool_calls.items()]
 
     async def process_user_message(  # noqa: C901, PLR0912, PLR0915
-        self: "OpenAIOrchestrator", user_message: str
+        self: typing.Self, user_message: str
     ) -> collections.abc.AsyncGenerator[str]:
         """Process a user message and generate a response using OpenAI API.
 

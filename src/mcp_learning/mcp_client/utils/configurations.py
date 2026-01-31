@@ -63,7 +63,7 @@ class HostedOpenAIConfigurations(pydantic_settings.BaseSettings):
     hosted_openai_headers: dict | None = None
 
     @pydantic.model_validator(mode="after")
-    def validate(self: "HostedOpenAIConfigurations") -> "HostedOpenAIConfigurations":
+    def validate_configurations(self: typing.Self) -> typing.Self:
         """Validate that the provided URL is valid.
 
         Raises
@@ -126,7 +126,7 @@ class LangfuseMonitoringConfigurations(pydantic_settings.BaseSettings):
     langfuse_secret_key: str | None = None
 
     @pydantic.model_validator(mode="after")
-    def validate(self: "LangfuseMonitoringConfigurations") -> "LangfuseMonitoringConfigurations":
+    def validate_configurations(self: typing.Self) -> typing.Self:
         """Validate that valid Langfuse configurations are provided if monitoring is enabled.
 
         Raises
@@ -136,7 +136,7 @@ class LangfuseMonitoringConfigurations(pydantic_settings.BaseSettings):
 
         Returns
         -------
-        LangfuseMonitoringConfigurations
+        typing.Self
             validated configurations
         """
         if not self.langfuse_enabled:

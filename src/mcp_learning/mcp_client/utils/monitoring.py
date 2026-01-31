@@ -19,7 +19,7 @@ else:
 class NoOpContextManager:
     """A no-operation context manager that does nothing."""
 
-    def __getattr__(self: "NoOpContextManager", name: str) -> "NoOpMethod":
+    def __getattr__(self: typing.Self, name: str) -> "NoOpMethod":
         """Access any attribute and return a no-op method.
 
         Parameters
@@ -36,7 +36,7 @@ class NoOpContextManager:
 
         return NoOpMethod()
 
-    def __enter__(self: "NoOpContextManager") -> "NoOpContextManager":
+    def __enter__(self: typing.Self) -> typing.Self:
         """Enter the no-op context manager and return itself.
 
         Returns
@@ -47,7 +47,7 @@ class NoOpContextManager:
         return self
 
     def __exit__(
-        self: "NoOpContextManager",
+        self: typing.Self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: types.TracebackType | None,
@@ -71,7 +71,9 @@ class NoOpContextManager:
 class NoOpMethod:
     """A no-operation method that does nothing."""
 
-    def __call__(self, *args: typing.Any, **kwargs: typing.Any) -> "NoOpContextManager":
+    def __call__(
+        self: typing.Self, *args: typing.Any, **kwargs: typing.Any  # noqa: ANN401
+    ) -> "NoOpContextManager":
         """Call the no-op method and return a no-op context manager.
 
         Parameters
@@ -95,7 +97,7 @@ class NoOpMethod:
 class NoOpLangfuseClient:
     """A no-operation Langfuse client that does nothing."""
 
-    def __getattr__(self: "NoOpLangfuseClient", name: str) -> "NoOpMethod":
+    def __getattr__(self: typing.Self, name: str) -> "NoOpMethod":
         """Access any attribute and return a no-op method.
 
         Parameters
