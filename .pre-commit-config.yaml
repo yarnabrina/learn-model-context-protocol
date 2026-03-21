@@ -43,7 +43,6 @@ repos:
     hooks:
       - id: autoflake
         args:
-          # - docs
           - src
           # - tests
           # - noxfile.py
@@ -70,7 +69,6 @@ repos:
         additional_dependencies:
           - .[jupyter]
         args:
-          # - docs
           - src
           # - tests
           # - noxfile.py
@@ -85,7 +83,6 @@ repos:
           - high
           - --confidence-level
           - high
-          # - docs
           - src
           # - tests
           # - noxfile.py
@@ -99,7 +96,6 @@ repos:
     hooks:
       - id: flake8
         args:
-          # - docs
           - src
           # - tests
           # - noxfile.py
@@ -127,7 +123,6 @@ repos:
         args:
           - --disable
           - import-error
-          # - docs
           - src
           # - tests
           # - noxfile.py
