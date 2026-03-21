@@ -731,17 +731,17 @@ class MCPClient:
         )
         elicitation_handler = (
             functools.partial(self.elicitation_handler, tool_call_id)
-            if self.settings.sampling
+            if self.settings.elicitation
             else None
         )
         logging_handler = (
             functools.partial(self.logging_handler, tool_call_id)
-            if self.settings.sampling
+            if self.settings.logging
             else None
         )
         progress_handler = (
             functools.partial(self.progress_handler, tool_call_id)
-            if self.settings.sampling
+            if self.settings.progress
             else None
         )
 
