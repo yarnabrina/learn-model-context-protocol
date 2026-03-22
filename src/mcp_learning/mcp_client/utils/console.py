@@ -103,11 +103,39 @@ async def llm_response(token_stream: typing.AsyncIterable[str]) -> str:
     return full_response
 
 
+def trace_tool_input(tool_name: str, input_data: dict) -> None:
+    """Print the MCP tool input in a formatted way.
+
+    Parameters
+    ----------
+    tool_name : str
+        name of the MCP tool being called
+    input_data : dict | None, optional
+        input parameters provided to the tool, by default None
+    """
+    CONSOLE.print(f"[bold yellow][Tool Input][/bold yellow] {tool_name}: {input_data}")
+
+
+def trace_tool_output(tool_name: str, output_data: dict) -> None:
+    """Print the MCP tool output in a formatted way.
+
+    Parameters
+    ----------
+    tool_name : str
+        name of the MCP tool being called
+    output_data : dict | None, optional
+        output results returned by the tool, by default None
+    """
+    CONSOLE.print(f"[bold yellow][Tool Output][/bold yellow] {tool_name}: {output_data}")
+
+
 __all__ = [
     "CONSOLE",
     "ENHANCED_CLI_AVAILABLE",
     "SESSION",
     "bot_response",
     "llm_response",
+    "trace_tool_input",
+    "trace_tool_output",
     "user_prompt",
 ]

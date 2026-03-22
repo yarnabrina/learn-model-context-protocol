@@ -39,11 +39,10 @@ repos:
           - pre-merge-commit
           - pre-push
   - repo: https://github.com/pycqa/autoflake
-    rev: v2.3.1
+    rev: v2.3.3
     hooks:
       - id: autoflake
         args:
-          # - docs
           - src
           # - tests
           # - noxfile.py
@@ -53,7 +52,7 @@ repos:
           - pre-merge-commit
           - pre-push
   - repo: https://github.com/pycqa/isort
-    rev: 7.0.0
+    rev: 8.0.1
     hooks:
       - id: isort
         args:
@@ -64,19 +63,18 @@ repos:
           - pre-merge-commit
           - pre-push
   - repo: https://github.com/psf/black
-    rev: 26.1.0
+    rev: 26.3.1
     hooks:
       - id: black
         additional_dependencies:
           - .[jupyter]
         args:
-          # - docs
           - src
           # - tests
           # - noxfile.py
         pass_filenames: false
   - repo: https://github.com/pycqa/bandit
-    rev: 1.9.3
+    rev: 1.9.4
     hooks:
       - id: bandit
         args:
@@ -85,7 +83,6 @@ repos:
           - high
           - --confidence-level
           - high
-          # - docs
           - src
           # - tests
           # - noxfile.py
@@ -99,7 +96,6 @@ repos:
     hooks:
       - id: flake8
         args:
-          # - docs
           - src
           # - tests
           # - noxfile.py
@@ -121,19 +117,18 @@ repos:
         stages:
           - manual
   - repo: https://github.com/PyCQA/pylint
-    rev: v4.0.4
+    rev: v4.0.5
     hooks:
       - id: pylint
         args:
           - --disable
           - import-error
-          # - docs
           - src
           # - tests
           # - noxfile.py
         pass_filenames: false
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.14
+    rev: v0.15.7
     hooks:
       - id: ruff-check
         args:
@@ -146,7 +141,7 @@ repos:
         stages:
           - manual
   - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.14
+    rev: v2.15
     hooks:
       - id: vulture
         pass_filenames: false
@@ -171,15 +166,15 @@ repos:
         stages:
           - manual
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.24.1
+    rev: v0.25
     hooks:
       - id: validate-pyproject
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.28
+    rev: 0.10.12
     hooks:
       - id: uv-lock
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         additional_dependencies:

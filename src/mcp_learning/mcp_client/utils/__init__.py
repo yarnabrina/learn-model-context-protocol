@@ -7,7 +7,7 @@ from .configurations import (
     LanguageModelProviderType,
     OpenAIConfigurations,
 )
-from .console import bot_response, llm_response, user_prompt
+from .console import bot_response, llm_response, trace_tool_input, trace_tool_output, user_prompt
 from .log import initiate_logging
 from .monitoring import MonitoringClient, get_monitoring_client
 
@@ -22,5 +22,7 @@ __all__ = [
     "get_monitoring_client",
     "initiate_logging",
     "llm_response",
+    "trace_tool_input",
+    "trace_tool_output",
     "user_prompt",
 ]

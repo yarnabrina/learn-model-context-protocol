@@ -7,9 +7,10 @@ import json
 import logging
 import typing
 
+import httpx
 import pydantic
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.context import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
@@ -31,7 +32,14 @@ from openai.types.chat import (
 from openai.types.shared_params import FunctionDefinition
 
 from .llm import OpenAIClient
-from .utils import Configurations, MonitoringClient, bot_response, user_prompt
+from .utils import (
+    Configurations,
+    MonitoringClient,
+    bot_response,
+    trace_tool_input,
+    trace_tool_output,
+    user_prompt,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -185,9 +193,11 @@ class MCPClient:
             name=server_name, connection_url=server_url, connection_headers=server_headers
         )
 
+        http_client = httpx.AsyncClient(headers=server.connection_headers)
+
         try:
-            async with streamablehttp_client(  # noqa: SIM117
-                server.connection_url, headers=server.connection_headers
+            async with streamable_http_client(  # noqa: SIM117
+                server.connection_url, http_client=http_client
             ) as (read_stream, write_stream, _):
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
@@ -724,6 +734,9 @@ class MCPClient:
             f"with following parameters: {arguments}."
         )
 
+        if self.settings.trace:
+            trace_tool_input(actual_tool_name, arguments)
+
         sampling_handler = (
             functools.partial(self.sampling_handler, tool_call_id)
             if self.settings.sampling
@@ -731,23 +744,25 @@ class MCPClient:
         )
         elicitation_handler = (
             functools.partial(self.elicitation_handler, tool_call_id)
-            if self.settings.sampling
+            if self.settings.elicitation
             else None
         )
         logging_handler = (
             functools.partial(self.logging_handler, tool_call_id)
-            if self.settings.sampling
+            if self.settings.logging
             else None
         )
         progress_handler = (
             functools.partial(self.progress_handler, tool_call_id)
-            if self.settings.sampling
+            if self.settings.progress
             else None
         )
 
+        http_client = httpx.AsyncClient(headers=server.connection_headers)
+
         try:
-            async with streamablehttp_client(  # noqa: SIM117
-                server.connection_url, headers=server.connection_headers
+            async with streamable_http_client(  # noqa: SIM117
+                server.connection_url, http_client=http_client
             ) as (read_stream, write_stream, _):
                 async with ClientSession(
                     read_stream,
@@ -782,6 +797,9 @@ class MCPClient:
             f"of MCP server {server_name} ({server.connection_url}) "
             f"as following: {tool_result}.\n"
         )
+
+        if self.settings.trace:
+            trace_tool_output(actual_tool_name, tool_result.model_dump())
 
         if tool_result.isError:
             error_message = "".join(

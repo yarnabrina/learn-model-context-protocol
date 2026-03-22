@@ -6,10 +6,10 @@ Documentation for configuring the MCP client.
 
 ```text
 uv run mcp-client --help
-# usage: mcp-client [-h] [--sampling | --no-sampling] [--elicitation | --no-elicitation] [--logging | --no-logging] [--progress | --no-progress]
-#                   [--debug | --no-debug] [--log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--log_file {str,null}] [--language_model str]
-#                   [--language_model_max_tokens int] [--language_model_temperature float] [--language_model_top_p float] [--language_model_timeout int]
-#                   [--langfuse_enabled | --no-langfuse_enabled] [--langfuse_host {str,null}] [--langfuse_public_key {str,null}] [--langfuse_secret_key {str,null}]
+# usage: mcp-client [-h] [--sampling | --no-sampling] [--elicitation | --no-elicitation] [--logging | --no-logging] [--progress | --no-progress] [--debug | --no-debug] [--trace | --no-trace]
+#                   [--log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--log_file {str,null}] [--language_model str] [--language_model_max_tokens int] [--language_model_temperature float]
+#                   [--language_model_top_p float] [--language_model_timeout int] [--langfuse_enabled | --no-langfuse_enabled] [--langfuse_host {str,null}] [--langfuse_public_key {str,null}]
+#                   [--langfuse_secret_key {str,null}]
 #                   {azure_openai,hosted_openai,openai} ...
 #
 # Aggregate all configurations for the MCP client.
@@ -25,11 +25,12 @@ uv run mcp-client --help
 #   --progress, --no-progress
 #                         (default: True)
 #   --debug, --no-debug   (default: False)
+#   --trace, --no-trace   (default: True)
 #   --log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
 #                         (default: WARNING)
 #   --log_file {str,null}
 #                         (default: mcp_client.log)
-#   --language_model str  (default: gpt-4o-mini)
+#   --language_model str  (default: gpt-5.1)
 #   --language_model_max_tokens int
 #                         (default: 4096)
 #   --language_model_temperature float
@@ -58,8 +59,7 @@ The subcommands further give configurations for different LLM providers. For exa
 
 ```text
 uv run mcp-client hosted_openai --help
-# usage: mcp-client hosted_openai [-h] [--language_model_provider_type hosted_openai] [--hosted_openai_api_key str] [--hosted_openai_base_url str]
-#                                 [--hosted_openai_headers {dict,null}]
+# usage: mcp-client hosted_openai [-h] [--language_model_provider_type hosted_openai] [--hosted_openai_api_key str] [--hosted_openai_base_url str] [--hosted_openai_headers {dict,null}]
 #
 # Define configurations for Hosted OpenAI.
 #

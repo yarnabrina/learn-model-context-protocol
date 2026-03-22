@@ -6,7 +6,7 @@ import typing
 
 import rich.logging
 
-from .configurations import Configurations
+from .configurations import Configurations, LogLevel
 from .console import CONSOLE
 
 
@@ -114,7 +114,7 @@ def initiate_logging(settings: Configurations) -> None:
             },
             "user": {
                 "()": create_rich_handler,
-                "level": settings.log_level,
+                "level": LogLevel.WARNING,
                 "formatter": "simple",
                 "filters": ["suppress"],
             },
