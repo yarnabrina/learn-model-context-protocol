@@ -111,7 +111,7 @@ class LanguageModelProviderConfigurations(pydantic_settings.BaseSettings):
 class LanguageModelConfigurations(pydantic_settings.BaseSettings):
     """Define configurations for language models."""
 
-    language_model: str = "gpt-4o-mini"
+    language_model: str = "gpt-5.1"
     language_model_max_tokens: int = 4096
     language_model_temperature: float = 0.1
     language_model_top_p: float = 0.9
