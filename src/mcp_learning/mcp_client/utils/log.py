@@ -65,10 +65,12 @@ class SuppressTracebackFilter(logging.Filter):
         logging.LogRecord
             updated log record without traceback
         """
-        record.exc_info = None
-        record.exc_text = None
+        duplicate_record = logging.makeLogRecord(record.__dict__)
 
-        return record
+        duplicate_record.exc_info = None
+        duplicate_record.exc_text = None
+
+        return duplicate_record
 
 
 def initiate_logging(settings: Configurations) -> None:
