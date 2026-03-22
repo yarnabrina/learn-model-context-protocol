@@ -32,7 +32,14 @@ from openai.types.chat import (
 from openai.types.shared_params import FunctionDefinition
 
 from .llm import OpenAIClient
-from .utils import Configurations, MonitoringClient, bot_response, user_prompt
+from .utils import (
+    Configurations,
+    MonitoringClient,
+    bot_response,
+    trace_tool_input,
+    trace_tool_output,
+    user_prompt,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -726,6 +733,7 @@ class MCPClient:
             f"from MCP server {server_name} ({server.connection_url}) "
             f"with following parameters: {arguments}."
         )
+        trace_tool_input(actual_tool_name, arguments)
 
         sampling_handler = (
             functools.partial(self.sampling_handler, tool_call_id)
@@ -787,6 +795,7 @@ class MCPClient:
             f"of MCP server {server_name} ({server.connection_url}) "
             f"as following: {tool_result}.\n"
         )
+        trace_tool_output(actual_tool_name, tool_result.model_dump())
 
         if tool_result.isError:
             error_message = "".join(
