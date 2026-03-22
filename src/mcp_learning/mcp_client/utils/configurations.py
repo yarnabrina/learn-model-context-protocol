@@ -28,6 +28,7 @@ class ClientConfigurations(pydantic_settings.BaseSettings):
     logging: pydantic_settings.CliImplicitFlag[bool] = True
     progress: pydantic_settings.CliImplicitFlag[bool] = True
     debug: pydantic_settings.CliImplicitFlag[bool] = False
+    trace: pydantic_settings.CliImplicitFlag[bool] = True
     log_level: LogLevel = LogLevel.WARNING
     log_file: str | None = "mcp_client.log"
 

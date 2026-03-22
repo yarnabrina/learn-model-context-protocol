@@ -733,7 +733,9 @@ class MCPClient:
             f"from MCP server {server_name} ({server.connection_url}) "
             f"with following parameters: {arguments}."
         )
-        trace_tool_input(actual_tool_name, arguments)
+
+        if self.settings.trace:
+            trace_tool_input(actual_tool_name, arguments)
 
         sampling_handler = (
             functools.partial(self.sampling_handler, tool_call_id)
@@ -795,7 +797,9 @@ class MCPClient:
             f"of MCP server {server_name} ({server.connection_url}) "
             f"as following: {tool_result}.\n"
         )
-        trace_tool_output(actual_tool_name, tool_result.model_dump())
+
+        if self.settings.trace:
+            trace_tool_output(actual_tool_name, tool_result.model_dump())
 
         if tool_result.isError:
             error_message = "".join(
