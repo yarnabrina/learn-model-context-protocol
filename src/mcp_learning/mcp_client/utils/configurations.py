@@ -11,7 +11,7 @@ ENVIRONMENT_FILE_ENCODING = "utf-8"
 
 
 class LogLevel(enum.StrEnum):
-    """Define log levels for the server."""
+    """Define log levels for the client."""
 
     DEBUG = "DEBUG"
     INFO = "INFO"
@@ -20,7 +20,7 @@ class LogLevel(enum.StrEnum):
     CRITICAL = "CRITICAL"
 
 
-class ServerConfigurations(pydantic_settings.BaseSettings):
+class ClientConfigurations(pydantic_settings.BaseSettings):
     """Define configurations for the MCP client."""
 
     sampling: pydantic_settings.CliImplicitFlag[bool] = True
@@ -161,7 +161,7 @@ class Configurations(
     LangfuseMonitoringConfigurations,
     LanguageModelConfigurations,
     LanguageModelProviderConfigurations,
-    ServerConfigurations,
+    ClientConfigurations,
 ):
     """Aggregate all configurations for the MCP client."""
 
@@ -177,6 +177,7 @@ __all__ = [
     "ENVIRONMENT_FILE",
     "ENVIRONMENT_FILE_ENCODING",
     "AzureOpenAIConfigurations",
+    "ClientConfigurations",
     "Configurations",
     "HostedOpenAIConfigurations",
     "LangfuseMonitoringConfigurations",
@@ -185,5 +186,4 @@ __all__ = [
     "LanguageModelProviderType",
     "LogLevel",
     "OpenAIConfigurations",
-    "ServerConfigurations",
 ]
