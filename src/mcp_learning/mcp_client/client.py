@@ -7,9 +7,10 @@ import json
 import logging
 import typing
 
+import httpx
 import pydantic
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.context import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
@@ -185,9 +186,11 @@ class MCPClient:
             name=server_name, connection_url=server_url, connection_headers=server_headers
         )
 
+        http_client = httpx.AsyncClient(headers=server.connection_headers)
+
         try:
-            async with streamablehttp_client(  # noqa: SIM117
-                server.connection_url, headers=server.connection_headers
+            async with streamable_http_client(  # noqa: SIM117
+                server.connection_url, http_client=http_client
             ) as (read_stream, write_stream, _):
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
@@ -745,9 +748,11 @@ class MCPClient:
             else None
         )
 
+        http_client = httpx.AsyncClient(headers=server.connection_headers)
+
         try:
-            async with streamablehttp_client(  # noqa: SIM117
-                server.connection_url, headers=server.connection_headers
+            async with streamable_http_client(  # noqa: SIM117
+                server.connection_url, http_client=http_client
             ) as (read_stream, write_stream, _):
                 async with ClientSession(
                     read_stream,
