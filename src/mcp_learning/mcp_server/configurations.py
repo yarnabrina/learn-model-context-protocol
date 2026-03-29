@@ -23,6 +23,7 @@ class ServerConfigurations(pydantic_settings.BaseSettings):
 
     debug: pydantic_settings.CliImplicitFlag[bool] = False
     log_level: LogLevel = LogLevel.WARNING
+    log_file: str = "mcp_server.log"
 
 
 class HttpConfigurations(pydantic_settings.BaseSettings):
