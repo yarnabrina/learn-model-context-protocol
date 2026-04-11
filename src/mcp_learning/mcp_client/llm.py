@@ -2,11 +2,11 @@
 
 import collections.abc
 import functools
-import logging
 import typing
 
 import openai
 import pydantic_settings
+import structlog
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
@@ -23,7 +23,7 @@ from .utils import (
     OpenAIConfigurations,
 )
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 class OpenAIClient:
