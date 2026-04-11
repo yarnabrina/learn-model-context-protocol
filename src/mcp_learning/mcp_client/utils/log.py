@@ -5,6 +5,7 @@ import logging.config
 import typing
 
 import rich.logging
+import structlog
 
 from .configurations import Configurations, LogLevel
 from .console import CONSOLE
@@ -25,6 +26,69 @@ def create_rich_handler(level: int | str = logging.NOTSET) -> rich.logging.RichH
     """
     return rich.logging.RichHandler(
         level=level, console=CONSOLE, show_time=False, show_level=True, show_path=False
+    )
+
+
+def create_foreign_pre_chain(include_callsite: bool = False) -> list:
+    """Create structlog processors for non-structlog log records.
+
+    Parameters
+    ----------
+    include_callsite : bool, optional
+        whether to include filename/function/line metadata, by default False
+
+    Returns
+    -------
+    list
+        processor chain for foreign stdlib log records
+    """
+    foreign_pre_chain = [
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso", utc=True),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+    ]
+
+    if include_callsite:
+        foreign_pre_chain.append(
+            structlog.processors.CallsiteParameterAdder(
+                {
+                    structlog.processors.CallsiteParameter.FILENAME,
+                    structlog.processors.CallsiteParameter.FUNC_NAME,
+                    structlog.processors.CallsiteParameter.LINENO,
+                }
+            )
+        )
+
+    return foreign_pre_chain
+
+
+def create_structured_formatter() -> structlog.stdlib.ProcessorFormatter:
+    """Create a structured formatter for developer logs.
+
+    Returns
+    -------
+    structlog.stdlib.ProcessorFormatter
+        JSON formatter for file-based developer logs
+    """
+    return structlog.stdlib.ProcessorFormatter(
+        processor=structlog.processors.JSONRenderer(),
+        foreign_pre_chain=create_foreign_pre_chain(include_callsite=True),
+    )
+
+
+def create_human_formatter() -> structlog.stdlib.ProcessorFormatter:
+    """Create a human-friendly formatter for user-facing stream logs.
+
+    Returns
+    -------
+    structlog.stdlib.ProcessorFormatter
+        rich console formatter for user-facing logs
+    """
+    return structlog.stdlib.ProcessorFormatter(
+        processor=structlog.dev.ConsoleRenderer(), foreign_pre_chain=create_foreign_pre_chain()
     )
 
 
@@ -65,14 +129,16 @@ class SuppressTracebackFilter(logging.Filter):
         logging.LogRecord
             updated log record without traceback
         """
-        record.exc_info = None
-        record.exc_text = None
+        duplicate_record = logging.makeLogRecord(record.__dict__)
 
-        return record
+        duplicate_record.exc_info = None
+        duplicate_record.exc_text = None
+
+        return duplicate_record
 
 
 def initiate_logging(settings: Configurations) -> None:
-    """Initialize logging with rich formatting.
+    """Initialize logging with structured and human-friendly formatting.
 
     Parameters
     ----------
@@ -82,20 +148,8 @@ def initiate_logging(settings: Configurations) -> None:
     logging_configurations = {
         "version": 1,
         "formatters": {
-            "detailed": {
-                "class": "logging.Formatter",
-                "format": "{asctime} {levelname} {name} {funcName} {lineno} {message}",
-                "datefmt": "%Y-%m-%dT%H:%M:%S",
-                "style": "{",
-                "validate": True,
-            },
-            "simple": {
-                "class": "logging.Formatter",
-                "format": "{message}",
-                "datefmt": "%Y-%m-%dT%H:%M:%S",
-                "style": "{",
-                "validate": True,
-            },
+            "detailed": {"()": create_structured_formatter},
+            "simple": {"()": create_human_formatter},
         },
         "filters": {
             "deactivate": {"()": DeactivateFilter},
@@ -127,3 +181,27 @@ def initiate_logging(settings: Configurations) -> None:
 
     logging.config.dictConfig(logging_configurations)
     logging.captureWarnings(True)
+
+    structlog.configure(
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.contextvars.merge_contextvars,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso", utc=True),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.processors.CallsiteParameterAdder(
+                {
+                    structlog.processors.CallsiteParameter.FILENAME,
+                    structlog.processors.CallsiteParameter.FUNC_NAME,
+                    structlog.processors.CallsiteParameter.LINENO,
+                }
+            ),
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        wrapper_class=structlog.stdlib.BoundLogger,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
