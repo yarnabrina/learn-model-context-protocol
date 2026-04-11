@@ -9,6 +9,7 @@ import re
 import sys
 import typing
 
+from ..logging_bootstrap import LoggingBootstrapSettings, LoggingComponent, initiate_logging
 from .client import MCPClient, Status
 from .orchestrator import OpenAIOrchestrator
 from .utils import Configurations, bot_response, get_monitoring_client, llm_response, user_prompt
@@ -311,6 +312,15 @@ class ChatInterface:
 def main() -> None:
     """Define the main entry point for the chat interface."""
     settings = Configurations()
+
+    initiate_logging(
+        LoggingBootstrapSettings(
+            component=LoggingComponent.MCP_CLIENT,
+            debug=settings.debug,
+            log_level=settings.log_level,
+            log_file=settings.log_file,
+        )
+    )
 
     chat_interface = ChatInterface(settings)
 

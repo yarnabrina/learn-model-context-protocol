@@ -9,6 +9,7 @@ import typing
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
+from ..logging_bootstrap import LoggingBootstrapSettings, LoggingComponent, initiate_logging
 from .arithmetic_operations import (
     add_numbers,
     divide_numbers,
@@ -218,6 +219,14 @@ class ArithmeticMCPServer:
 def main() -> None:
     """Define entry point for the MCP server."""
     settings = Configurations()
+
+    initiate_logging(
+        LoggingBootstrapSettings(
+            component=LoggingComponent.MCP_SERVER,
+            debug=settings.debug,
+            log_level=settings.log_level,
+        )
+    )
 
     arithmetic_mcp_server = ArithmeticMCPServer(settings)
 
