@@ -2,9 +2,9 @@
 
 import collections.abc
 import json
+import logging
 import typing
 
-import structlog
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageParam,
@@ -19,7 +19,7 @@ from .client import MCPClient
 from .llm import OpenAIClient
 from .utils import Configurations, MonitoringClient
 
-LOGGER = structlog.get_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class OpenAIOrchestrator:

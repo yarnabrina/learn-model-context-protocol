@@ -9,7 +9,6 @@ import typing
 
 import httpx
 import pydantic
-import structlog
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.context import RequestContext
@@ -42,7 +41,7 @@ from .utils import (
     user_prompt,
 )
 
-LOGGER = structlog.get_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 ELICITATION_REQUEST_PROMPT = """You are an elicitation assistant.
@@ -660,7 +659,9 @@ class MCPClient:
         parameters : LoggingMessageNotificationParams
             parameters for the logging request, including log level and message data
         """
-        LOGGER.log(MCP_LOG_LEVELS[parameters.level], parameters.data, tool_call_id=tool_call_id)
+        LOGGER.log(
+            MCP_LOG_LEVELS[parameters.level], parameters.data, extra={"tool_call_id": tool_call_id}
+        )
 
     @staticmethod
     async def progress_handler(

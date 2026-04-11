@@ -4,20 +4,16 @@ import asyncio
 import enum
 import functools
 import json
+import logging
 import re
 import sys
 import typing
 
 from .client import MCPClient, Status
 from .orchestrator import OpenAIOrchestrator
-from .utils import (
-    Configurations,
-    bot_response,
-    get_monitoring_client,
-    initiate_logging,
-    llm_response,
-    user_prompt,
-)
+from .utils import Configurations, bot_response, get_monitoring_client, llm_response, user_prompt
+
+LOGGER = logging.getLogger(__name__)
 
 HELP_MESSAGE = """
 /help
@@ -266,6 +262,8 @@ class ChatInterface:
         command_inputs : dict
             dictionary of command inputs extracted from user input
         """
+        LOGGER.info(f"CLI command received: {command}.")
+
         match command:
             case ChatCommand.HELP:
                 await self.serve_help_command()
@@ -307,12 +305,12 @@ class ChatInterface:
 
                 span_monitoring.update(output=llm_output)
 
+            LOGGER.info("CLI chat turn completed.")
+
 
 def main() -> None:
     """Define the main entry point for the chat interface."""
     settings = Configurations()
-
-    initiate_logging(settings)
 
     chat_interface = ChatInterface(settings)
 

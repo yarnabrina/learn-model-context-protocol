@@ -19,7 +19,6 @@ from .arithmetic_operations import (
 )
 from .configurations import Configurations
 from .exponentiation import exponentiate
-from .log import initiate_logging
 from .simplification import evaluate_arithmetic_expression, parse_arithmetic_expression
 
 LOGGER = logging.getLogger(__name__)
@@ -219,7 +218,6 @@ class ArithmeticMCPServer:
 def main() -> None:
     """Define entry point for the MCP server."""
     settings = Configurations()
-    initiate_logging(settings)
 
     arithmetic_mcp_server = ArithmeticMCPServer(settings)
 
