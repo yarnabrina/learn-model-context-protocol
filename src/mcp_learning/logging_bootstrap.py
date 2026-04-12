@@ -5,6 +5,7 @@ import datetime
 import enum
 import logging
 import logging.config
+import re
 import warnings
 
 import structlog
@@ -75,6 +76,109 @@ class LoggingBootstrapSettings:
     runtime_environment: RuntimeEnvironment = RuntimeEnvironment.LOCAL
     log_level: LogLevel | None = None
     log_file: str | None = None
+    redaction_enabled: bool = True
+
+
+PATTERN_REDACTION_FIELDS = ("event", "message")
+
+REDACTION_PATTERN = re.compile(r"sk-[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._=-]{8,}", re.IGNORECASE)
+
+
+def redact_text(value: str) -> str:
+    """Apply minimal regex-based redaction to a string value.
+
+    Parameters
+    ----------
+    value : str
+        string to redact
+
+    Returns
+    -------
+    str
+        string with matched patterns replaced by <REDACTED>
+    """
+    return REDACTION_PATTERN.sub("<REDACTED>", value)
+
+
+def redact_value(value: object) -> object:
+    """Recursively apply pattern-based redaction to common container value types.
+
+    Parameters
+    ----------
+    value : object
+        value to redact
+
+    Returns
+    -------
+    object
+        redacted equivalent of the input value
+
+    Notes
+    -----
+    Strings are scanned for patterns.
+    Dicts, lists, and tuples are traversed recursively.
+    All other types are returned unchanged.
+    """
+    if isinstance(value, str):
+        return redact_text(value)
+
+    if isinstance(value, tuple):
+        return tuple(redact_value(inner_value) for inner_value in value)
+
+    if isinstance(value, list):
+        return [redact_value(inner_value) for inner_value in value]
+
+    if isinstance(value, dict):
+        return {key: redact_value(inner_value) for key, inner_value in value.items()}
+
+    return value
+
+
+def sanitize_event_dict(
+    event_dict: structlog.typing.EventDict,
+    redaction_enabled: bool,
+    runtime_environment: RuntimeEnvironment,
+    component: LoggingComponent,
+) -> structlog.typing.EventDict:
+    """Sanitize selected client log fields using minimal redaction rules.
+
+    Parameters
+    ----------
+    event_dict : structlog.typing.EventDict
+        mutable structlog event dictionary to sanitize in place
+    redaction_enabled : bool
+        whether redaction is active; ignored and treated as True in production
+    runtime_environment : RuntimeEnvironment
+        current runtime environment; forces redaction on in production
+    component : LoggingComponent
+        component identity; sanitization is skipped unless MCP_CLIENT
+
+    Returns
+    -------
+    structlog.typing.EventDict
+        sanitized event dictionary
+
+    Notes
+    -----
+    Pattern redaction is only applied to selected content fields.
+    Generic metadata fields are left unchanged.
+    """
+    if component != LoggingComponent.MCP_CLIENT:
+        return event_dict
+
+    if runtime_environment == RuntimeEnvironment.PRODUCTION:
+        effective_redaction_enabled = True
+    else:
+        effective_redaction_enabled = redaction_enabled
+
+    if not effective_redaction_enabled:
+        return event_dict
+
+    for key, value in list(event_dict.items()):
+        if key.lower() in PATTERN_REDACTION_FIELDS:
+            event_dict[key] = redact_value(value)
+
+    return event_dict
 
 
 def get_dated_log_file(component: LoggingComponent) -> str:
@@ -354,6 +458,32 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
 
         return event_dict
 
+    def sanitize_fields(
+        _: structlog.typing.WrappedLogger, __: str, event_dict: structlog.typing.EventDict
+    ) -> structlog.typing.EventDict:
+        """Apply minimal client-only redaction before rendering.
+
+        Parameters
+        ----------
+        _ : structlog.typing.WrappedLogger
+            bound logger instance (unused)
+        __ : str
+            method name (unused)
+        event_dict : structlog.typing.EventDict
+            mutable event dictionary being processed
+
+        Returns
+        -------
+        structlog.typing.EventDict
+            sanitized event dictionary
+        """
+        return sanitize_event_dict(
+            event_dict,
+            settings.redaction_enabled,
+            settings.runtime_environment,
+            settings.component,
+        )
+
     foreign_pre_chain = [
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -361,6 +491,7 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
         timestamper,
         structlog.processors.format_exc_info,
         inject_base_fields,
+        sanitize_fields,
     ]
 
     policy_key = PolicyKey(
@@ -432,6 +563,7 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
             timestamper,
             structlog.processors.format_exc_info,
             inject_base_fields,
+            sanitize_fields,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
@@ -447,5 +579,8 @@ __all__ = [
     "RuntimeEnvironment",
     "get_dated_log_file",
     "initiate_logging",
+    "redact_text",
+    "redact_value",
     "resolve_fastmcp_log_level",
+    "sanitize_event_dict",
 ]

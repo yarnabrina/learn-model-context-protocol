@@ -24,6 +24,7 @@ class ClientConfigurations(pydantic_settings.BaseSettings):
     runtime_environment: RuntimeEnvironment = RuntimeEnvironment.LOCAL
     log_level: LogLevel | None = None
     log_file: str | None = None
+    redaction_enabled: pydantic_settings.CliImplicitFlag[bool] = True
 
 
 class LanguageModelProviderType(enum.StrEnum):

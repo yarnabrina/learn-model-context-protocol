@@ -398,6 +398,7 @@ def main() -> None:
             log_level=settings.log_level,
             runtime_environment=settings.runtime_environment,
             log_file=settings.log_file,
+            redaction_enabled=settings.redaction_enabled,
         )
     )
 
