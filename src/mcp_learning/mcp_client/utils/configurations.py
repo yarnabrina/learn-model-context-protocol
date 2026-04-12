@@ -6,18 +6,10 @@ import typing
 import pydantic
 import pydantic_settings
 
-ENVIRONMENT_FILE = "mcp_client.env"
-ENVIRONMENT_FILE_ENCODING = "utf-8"
+from ...logging_bootstrap import LogLevel, RuntimeEnvironment
 
-
-class LogLevel(enum.StrEnum):
-    """Define log levels for the client."""
-
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
+SETTINGS_FILE = "mcp_client.env"
+SETTINGS_FILE_ENCODING = "utf-8"
 
 
 class ClientConfigurations(pydantic_settings.BaseSettings):
@@ -29,8 +21,10 @@ class ClientConfigurations(pydantic_settings.BaseSettings):
     progress: pydantic_settings.CliImplicitFlag[bool] = True
     debug: pydantic_settings.CliImplicitFlag[bool] = False
     trace: pydantic_settings.CliImplicitFlag[bool] = True
-    log_level: LogLevel = LogLevel.WARNING
-    log_file: str | None = "mcp_client.log"
+    runtime_environment: RuntimeEnvironment = RuntimeEnvironment.LOCAL
+    log_level: LogLevel | None = None
+    log_file: str | None = None
+    redaction_enabled: pydantic_settings.CliImplicitFlag[bool] = True
 
 
 class LanguageModelProviderType(enum.StrEnum):
@@ -167,16 +161,16 @@ class Configurations(
     """Aggregate all configurations for the MCP client."""
 
     model_config = pydantic_settings.SettingsConfigDict(
-        env_file=ENVIRONMENT_FILE,
-        env_file_encoding=ENVIRONMENT_FILE_ENCODING,
+        env_file=SETTINGS_FILE,
+        env_file_encoding=SETTINGS_FILE_ENCODING,
         cli_parse_args=True,
         cli_ignore_unknown_args=True,
     )
 
 
 __all__ = [
-    "ENVIRONMENT_FILE",
-    "ENVIRONMENT_FILE_ENCODING",
+    "SETTINGS_FILE",
+    "SETTINGS_FILE_ENCODING",
     "AzureOpenAIConfigurations",
     "ClientConfigurations",
     "Configurations",
@@ -187,4 +181,5 @@ __all__ = [
     "LanguageModelProviderType",
     "LogLevel",
     "OpenAIConfigurations",
+    "RuntimeEnvironment",
 ]

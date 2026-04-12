@@ -2,11 +2,11 @@
 
 import collections.abc
 import functools
+import logging
 import typing
 
 import openai
 import pydantic_settings
-import structlog
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
@@ -23,7 +23,7 @@ from .utils import (
     OpenAIConfigurations,
 )
 
-LOGGER = structlog.get_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class OpenAIClient:
@@ -131,7 +131,7 @@ class OpenAIClient:
                 {"parallel_tool_calls": True, "tool_choice": "auto", "tools": tools}
             )
 
-        LOGGER.debug(f"Formulated OpenAI inputs: {openai_inputs}")
+        LOGGER.debug(f"Formulated OpenAI inputs: {openai_inputs=}.")
 
         return openai_inputs
 

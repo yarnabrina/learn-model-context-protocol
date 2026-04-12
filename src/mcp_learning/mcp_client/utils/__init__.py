@@ -8,7 +8,6 @@ from .configurations import (
     OpenAIConfigurations,
 )
 from .console import bot_response, llm_response, trace_tool_input, trace_tool_output, user_prompt
-from .log import initiate_logging
 from .monitoring import MonitoringClient, get_monitoring_client
 
 __all__ = [
@@ -20,7 +19,6 @@ __all__ = [
     "OpenAIConfigurations",
     "bot_response",
     "get_monitoring_client",
-    "initiate_logging",
     "llm_response",
     "trace_tool_input",
     "trace_tool_output",

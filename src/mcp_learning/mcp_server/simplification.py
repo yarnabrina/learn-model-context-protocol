@@ -56,9 +56,9 @@ Return only the postfix arithmetic expression without any additional text or exp
     await context.report_progress(2, 2, "Finished MCP sampling.")
 
     if not isinstance(response.content, TextContent):
-        await context.error(f"Expected response content to be text: {response.content}.")
+        await context.error(f"Expected response content to be text: {response.content=}.")
 
-        raise TypeError(f"Response content is not a text content: : {response.content}.")
+        raise TypeError(f"Response content is not a text content: {response.content=}.")
 
     expression = response.content.text.strip()
 

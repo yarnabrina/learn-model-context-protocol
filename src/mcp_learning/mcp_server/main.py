@@ -9,6 +9,12 @@ import typing
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
+from ..logging_bootstrap import (
+    LoggingBootstrapSettings,
+    LoggingComponent,
+    initiate_logging,
+    resolve_fastmcp_log_level,
+)
 from .arithmetic_operations import (
     add_numbers,
     divide_numbers,
@@ -19,7 +25,6 @@ from .arithmetic_operations import (
 )
 from .configurations import Configurations
 from .exponentiation import exponentiate
-from .log import initiate_logging
 from .simplification import evaluate_arithmetic_expression, parse_arithmetic_expression
 
 LOGGER = logging.getLogger(__name__)
@@ -59,7 +64,16 @@ def create_logged_tool(
         typing.Any
             result returned by the original tool function
         """
-        LOGGER.info(f"Received tool call for {tool_name=} with {args=}, {kwargs=}.")
+        LOGGER.info(
+            f"Received tool call for {tool_name=} with {args=} and {kwargs=}.",
+            extra={
+                "event.group": "tool",
+                "event.type": "local_call",
+                "event.action": "execute",
+                "event.status": "started",
+                "tool.name": tool_name,
+            },
+        )
 
         try:
             if asyncio.iscoroutinefunction(tool_callable):
@@ -67,15 +81,44 @@ def create_logged_tool(
             else:
                 result = tool_callable(*args, **kwargs)
         except ExceptionGroup:
-            LOGGER.exception(f"Failed tool call for {tool_name=}.", exc_info=True)
+            LOGGER.exception(
+                f"Tool call for {tool_name=} failed.",
+                exc_info=True,
+                extra={
+                    "event.group": "tool",
+                    "event.type": "local_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.name": tool_name,
+                },
+            )
 
             raise
         except Exception:
-            LOGGER.exception(f"Failed tool call for {tool_name=}.", exc_info=True)
+            LOGGER.exception(
+                f"Tool call for {tool_name=} failed.",
+                exc_info=True,
+                extra={
+                    "event.group": "tool",
+                    "event.type": "local_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.name": tool_name,
+                },
+            )
 
             raise
 
-        LOGGER.info(f"Succeeded tool call for {tool_name=} with {result=}.")
+        LOGGER.info(
+            f"Tool call for {tool_name=} succeeded with {result=}.",
+            extra={
+                "event.group": "tool",
+                "event.type": "local_call",
+                "event.action": "execute",
+                "event.status": "succeeded",
+                "tool.name": tool_name,
+            },
+        )
 
         return result
 
@@ -111,6 +154,16 @@ class ArithmeticMCPServer:
         FastMCP
             configured MCP server instance
         """
+        effective_log_level = resolve_fastmcp_log_level(
+            LoggingBootstrapSettings(
+                component=LoggingComponent.MCP_SERVER,
+                runtime_environment=self.settings.runtime_environment,
+                debug=self.settings.debug,
+                log_level=self.settings.log_level,
+                log_file=self.settings.log_file,
+            )
+        )
+
         return FastMCP(
             name="Basic MCP Server for Demonstration",
             instructions=(
@@ -118,7 +171,7 @@ class ArithmeticMCPServer:
                 " and parse/evaluate arithmetic expressions."
             ),
             debug=self.settings.debug,
-            log_level=self.settings.log_level.value,
+            log_level=effective_log_level,
             host=self.settings.host,
             port=self.settings.port,
             streamable_http_path=self.settings.streamable_http_path,
@@ -219,9 +272,52 @@ class ArithmeticMCPServer:
 def main() -> None:
     """Define entry point for the MCP server."""
     settings = Configurations()
-    initiate_logging(settings)
 
-    arithmetic_mcp_server = ArithmeticMCPServer(settings)
+    initiate_logging(
+        LoggingBootstrapSettings(
+            component=LoggingComponent.MCP_SERVER,
+            debug=settings.debug,
+            log_level=settings.log_level,
+            runtime_environment=settings.runtime_environment,
+            log_file=settings.log_file,
+        )
+    )
+
+    LOGGER.info(
+        "MCP server startup began.",
+        extra={
+            "event.group": "runtime",
+            "event.type": "lifecycle",
+            "event.action": "start",
+            "event.status": "started",
+        },
+    )
+
+    try:
+        arithmetic_mcp_server = ArithmeticMCPServer(settings)
+    except Exception:
+        LOGGER.exception(
+            "MCP server startup failed.",
+            exc_info=True,
+            extra={
+                "event.group": "runtime",
+                "event.type": "lifecycle",
+                "event.action": "start",
+                "event.status": "failed",
+            },
+        )
+
+        raise
+
+    LOGGER.info(
+        "MCP server startup completed.",
+        extra={
+            "event.group": "runtime",
+            "event.type": "lifecycle",
+            "event.action": "start",
+            "event.status": "succeeded",
+        },
+    )
 
     arithmetic_mcp_server.mcp_server.run(transport="streamable-http")
 
