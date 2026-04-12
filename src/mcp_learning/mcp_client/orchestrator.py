@@ -127,31 +127,66 @@ class OpenAIOrchestrator:
         """
         self.conversation_history.append({"role": "user", "content": user_message})
 
-        with self.langfuse_client.start_as_current_observation(
-            name="generation counter 0", as_type="generation", input=user_message
-        ) as generation_monitoring:
-            assistant_message = ""
-            async for (
-                finish_reason_delta,
-                assistant_message_token,
-                assistant_tool_calls_delta,
-            ) in self.call_openai():
-                if assistant_message_token:
-                    assistant_message += assistant_message_token
+        LOGGER.info(
+            "Starting LLM request.",
+            extra={
+                "event.group": "llm",
+                "event.type": "request",
+                "event.action": "request",
+                "event.status": "started",
+            },
+        )
 
-                    yield assistant_message_token
+        try:
+            with self.langfuse_client.start_as_current_observation(
+                name="generation counter 0", as_type="generation", input=user_message
+            ) as generation_monitoring:
+                assistant_message = ""
+                async for (
+                    finish_reason_delta,
+                    assistant_message_token,
+                    assistant_tool_calls_delta,
+                ) in self.call_openai():
+                    if assistant_message_token:
+                        assistant_message += assistant_message_token
 
-                if finish_reason_delta:
-                    finish_reason = finish_reason_delta
-                    assistant_tool_calls = assistant_tool_calls_delta
+                        yield assistant_message_token
 
+                    if finish_reason_delta:
+                        finish_reason = finish_reason_delta
+                        assistant_tool_calls = assistant_tool_calls_delta
+
+                        yield "\n"
+
+                        break
+                else:
                     yield "\n"
 
-                    break
-            else:
-                yield "\n"
+                generation_monitoring.update(output=assistant_message)
+        except Exception:
+            LOGGER.exception(
+                "LLM request failed.",
+                exc_info=True,
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "failed",
+                },
+            )
 
-            generation_monitoring.update(output=assistant_message)
+            raise
+
+        LOGGER.info(
+            "Completed LLM request.",
+            extra={
+                "event.group": "llm",
+                "event.type": "request",
+                "event.action": "request",
+                "event.status": "succeeded",
+                "llm.finish_reason": finish_reason,
+            },
+        )
 
         counter = 1
         while finish_reason == "tool_calls":
@@ -161,7 +196,7 @@ class OpenAIOrchestrator:
                 )
             )
 
-            LOGGER.debug(f"Identified tool calls: {assistant_tool_calls}.")
+            LOGGER.debug(f"Identified tool calls: {assistant_tool_calls=}.")
 
             for tool_call in assistant_tool_calls:
                 with self.langfuse_client.start_as_current_observation(
@@ -231,28 +266,63 @@ class OpenAIOrchestrator:
             with self.langfuse_client.start_as_current_observation(
                 name=f"generation counter {counter}", as_type="generation"
             ) as generation_monitoring:
-                assistant_message = ""
-                async for (
-                    finish_reason_delta,
-                    assistant_message_token,
-                    assistant_tool_calls_delta,
-                ) in self.call_openai():
-                    if assistant_message_token:
-                        assistant_message += assistant_message_token
+                LOGGER.info(
+                    "Starting LLM follow-up request.",
+                    extra={
+                        "event.group": "llm",
+                        "event.type": "request",
+                        "event.action": "request",
+                        "event.status": "started",
+                    },
+                )
 
-                        yield assistant_message_token
+                try:
+                    assistant_message = ""
+                    async for (
+                        finish_reason_delta,
+                        assistant_message_token,
+                        assistant_tool_calls_delta,
+                    ) in self.call_openai():
+                        if assistant_message_token:
+                            assistant_message += assistant_message_token
 
-                    if finish_reason_delta:
-                        finish_reason = finish_reason_delta
-                        assistant_tool_calls = assistant_tool_calls_delta
+                            yield assistant_message_token
 
+                        if finish_reason_delta:
+                            finish_reason = finish_reason_delta
+                            assistant_tool_calls = assistant_tool_calls_delta
+
+                            yield "\n"
+
+                            break
+                    else:
                         yield "\n"
 
-                        break
-                else:
-                    yield "\n"
+                    generation_monitoring.update(output=assistant_message)
+                except Exception:
+                    LOGGER.exception(
+                        "LLM follow-up request failed.",
+                        exc_info=True,
+                        extra={
+                            "event.group": "llm",
+                            "event.type": "request",
+                            "event.action": "request",
+                            "event.status": "failed",
+                        },
+                    )
 
-                generation_monitoring.update(output=assistant_message)
+                    raise
+
+            LOGGER.info(
+                "Completed LLM follow-up request.",
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "succeeded",
+                    "llm.finish_reason": finish_reason,
+                },
+            )
 
             counter += 1
 

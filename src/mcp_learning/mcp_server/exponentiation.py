@@ -63,10 +63,10 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
             case "accept":
                 corrected_exponent = elicitation_result.data.corrected_exponent
 
-                await context.debug(f"User corrected {exponent=} to {corrected_exponent}.")
+                await context.debug(f"User corrected {exponent=} to {corrected_exponent=}.")
             case "decline" | "cancel":
                 await context.error(
-                    f"User decided to {elicitation_result.action} the correction request."
+                    f"User decided to {elicitation_result.action=} the correction request."
                 )
 
                 raise NotImplementedError("Only integer powers are currently supported.")

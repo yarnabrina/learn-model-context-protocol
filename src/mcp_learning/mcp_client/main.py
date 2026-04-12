@@ -263,23 +263,69 @@ class ChatInterface:
         command_inputs : dict
             dictionary of command inputs extracted from user input
         """
-        LOGGER.info(f"CLI command received: {command}.")
+        LOGGER.info(
+            f"CLI command received: {command=}.",
+            extra={
+                "event.group": "interaction",
+                "event.type": "command",
+                "event.action": "handle",
+                "event.status": "started",
+                "cli.command.name": command,
+            },
+        )
 
-        match command:
-            case ChatCommand.HELP:
-                await self.serve_help_command()
-            case ChatCommand.ADD_SERVER:
-                await self.serve_add_server_command(command_inputs)
-            case ChatCommand.REMOVE_SERVER:
-                await self.serve_remove_server_command(command_inputs)
-            case ChatCommand.LIST_SERVERS:
-                await self.serve_list_servers_command()
-            case ChatCommand.LIST_TOOLS:
-                await self.list_tools_command(command_inputs)
-            case ChatCommand.DESCRIBE_TOOL:
-                await self.serve_describe_tool_command(command_inputs)
-            case ChatCommand.QUIT:
-                await self.serve_quit_command()
+        try:
+            match command:
+                case ChatCommand.HELP:
+                    await self.serve_help_command()
+                case ChatCommand.ADD_SERVER:
+                    await self.serve_add_server_command(command_inputs)
+                case ChatCommand.REMOVE_SERVER:
+                    await self.serve_remove_server_command(command_inputs)
+                case ChatCommand.LIST_SERVERS:
+                    await self.serve_list_servers_command()
+                case ChatCommand.LIST_TOOLS:
+                    await self.list_tools_command(command_inputs)
+                case ChatCommand.DESCRIBE_TOOL:
+                    await self.serve_describe_tool_command(command_inputs)
+                case ChatCommand.QUIT:
+                    LOGGER.info(
+                        f"CLI command completed: {command=}.",
+                        extra={
+                            "event.group": "interaction",
+                            "event.type": "command",
+                            "event.action": "handle",
+                            "event.status": "succeeded",
+                            "cli.command.name": command,
+                        },
+                    )
+
+                    await self.serve_quit_command()
+        except Exception:
+            LOGGER.exception(
+                f"CLI command failed: {command=}.",
+                exc_info=True,
+                extra={
+                    "event.group": "interaction",
+                    "event.type": "command",
+                    "event.action": "handle",
+                    "event.status": "failed",
+                    "cli.command.name": command,
+                },
+            )
+
+            raise
+
+        LOGGER.info(
+            f"CLI command completed: {command=}.",
+            extra={
+                "event.group": "interaction",
+                "event.type": "command",
+                "event.action": "handle",
+                "event.status": "succeeded",
+                "cli.command.name": command,
+            },
+        )
 
     async def start_interactive_chat(self: typing.Self) -> None:
         """Manage the interactive chat loop."""
@@ -295,18 +341,50 @@ class ChatInterface:
 
                 continue
 
-            with self.langfuse_client.start_as_current_observation(
-                name="interactive chat", as_type="span", end_on_exit=True
-            ) as span_monitoring:
-                span_monitoring.update(input=user_input)
+            try:
+                with self.langfuse_client.start_as_current_observation(
+                    name="interactive chat", as_type="span", end_on_exit=True
+                ) as span_monitoring:
+                    LOGGER.info(
+                        "CLI chat turn started.",
+                        extra={
+                            "event.group": "interaction",
+                            "event.type": "chat_turn",
+                            "event.action": "process",
+                            "event.status": "started",
+                        },
+                    )
 
-                llm_output = await llm_response(
-                    self.llm_orchestrator.process_user_message(user_input)
+                    span_monitoring.update(input=user_input)
+
+                    llm_output = await llm_response(
+                        self.llm_orchestrator.process_user_message(user_input)
+                    )
+
+                    span_monitoring.update(output=llm_output)
+            except Exception:
+                LOGGER.exception(
+                    "CLI chat turn failed.",
+                    exc_info=True,
+                    extra={
+                        "event.group": "interaction",
+                        "event.type": "chat_turn",
+                        "event.action": "process",
+                        "event.status": "failed",
+                    },
                 )
 
-                span_monitoring.update(output=llm_output)
+                raise
 
-            LOGGER.info("CLI chat turn completed.")
+            LOGGER.info(
+                "CLI chat turn completed.",
+                extra={
+                    "event.group": "interaction",
+                    "event.type": "chat_turn",
+                    "event.action": "process",
+                    "event.status": "succeeded",
+                },
+            )
 
 
 def main() -> None:
@@ -323,7 +401,41 @@ def main() -> None:
         )
     )
 
-    chat_interface = ChatInterface(settings)
+    LOGGER.info(
+        "MCP client startup began.",
+        extra={
+            "event.group": "runtime",
+            "event.type": "lifecycle",
+            "event.action": "start",
+            "event.status": "started",
+        },
+    )
+
+    try:
+        chat_interface = ChatInterface(settings)
+    except Exception:
+        LOGGER.exception(
+            "MCP client startup failed.",
+            exc_info=True,
+            extra={
+                "event.group": "runtime",
+                "event.type": "lifecycle",
+                "event.action": "start",
+                "event.status": "failed",
+            },
+        )
+
+        raise
+
+    LOGGER.info(
+        "MCP client startup completed.",
+        extra={
+            "event.group": "runtime",
+            "event.type": "lifecycle",
+            "event.action": "start",
+            "event.status": "succeeded",
+        },
+    )
 
     asyncio.run(chat_interface.start_interactive_chat())
 

@@ -131,7 +131,7 @@ class OpenAIClient:
                 {"parallel_tool_calls": True, "tool_choice": "auto", "tools": tools}
             )
 
-        LOGGER.debug(f"Formulated OpenAI inputs: {openai_inputs}")
+        LOGGER.debug(f"Formulated OpenAI inputs: {openai_inputs=}.")
 
         return openai_inputs
 

@@ -64,7 +64,16 @@ def create_logged_tool(
         typing.Any
             result returned by the original tool function
         """
-        LOGGER.info(f"Received tool call for {tool_name=} with {args=}, {kwargs=}.")
+        LOGGER.info(
+            f"Received tool call for {tool_name=} with {args=} and {kwargs=}.",
+            extra={
+                "event.group": "tool",
+                "event.type": "local_call",
+                "event.action": "execute",
+                "event.status": "started",
+                "tool.name": tool_name,
+            },
+        )
 
         try:
             if asyncio.iscoroutinefunction(tool_callable):
@@ -72,15 +81,44 @@ def create_logged_tool(
             else:
                 result = tool_callable(*args, **kwargs)
         except ExceptionGroup:
-            LOGGER.exception(f"Failed tool call for {tool_name=}.", exc_info=True)
+            LOGGER.exception(
+                f"Tool call for {tool_name=} failed.",
+                exc_info=True,
+                extra={
+                    "event.group": "tool",
+                    "event.type": "local_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.name": tool_name,
+                },
+            )
 
             raise
         except Exception:
-            LOGGER.exception(f"Failed tool call for {tool_name=}.", exc_info=True)
+            LOGGER.exception(
+                f"Tool call for {tool_name=} failed.",
+                exc_info=True,
+                extra={
+                    "event.group": "tool",
+                    "event.type": "local_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.name": tool_name,
+                },
+            )
 
             raise
 
-        LOGGER.info(f"Succeeded tool call for {tool_name=} with {result=}.")
+        LOGGER.info(
+            f"Tool call for {tool_name=} succeeded with {result=}.",
+            extra={
+                "event.group": "tool",
+                "event.type": "local_call",
+                "event.action": "execute",
+                "event.status": "succeeded",
+                "tool.name": tool_name,
+            },
+        )
 
         return result
 
@@ -245,7 +283,41 @@ def main() -> None:
         )
     )
 
-    arithmetic_mcp_server = ArithmeticMCPServer(settings)
+    LOGGER.info(
+        "MCP server startup began.",
+        extra={
+            "event.group": "runtime",
+            "event.type": "lifecycle",
+            "event.action": "start",
+            "event.status": "started",
+        },
+    )
+
+    try:
+        arithmetic_mcp_server = ArithmeticMCPServer(settings)
+    except Exception:
+        LOGGER.exception(
+            "MCP server startup failed.",
+            exc_info=True,
+            extra={
+                "event.group": "runtime",
+                "event.type": "lifecycle",
+                "event.action": "start",
+                "event.status": "failed",
+            },
+        )
+
+        raise
+
+    LOGGER.info(
+        "MCP server startup completed.",
+        extra={
+            "event.group": "runtime",
+            "event.type": "lifecycle",
+            "event.action": "start",
+            "event.status": "succeeded",
+        },
+    )
 
     arithmetic_mcp_server.mcp_server.run(transport="streamable-http")
 

@@ -189,6 +189,18 @@ class MCPClient:
         list[str]
             list of tool names available on the added MCP server
         """
+        LOGGER.info(
+            f"Adding MCP server {server_name=} at {server_url=}.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "server_registry",
+                "event.action": "add",
+                "event.status": "started",
+                "mcp.server.name": server_name,
+                "mcp.server.url": server_url,
+            },
+        )
+
         server = MCPServer(
             name=server_name, connection_url=server_url, connection_headers=server_headers
         )
@@ -204,11 +216,31 @@ class MCPClient:
 
                     server_tools = await session.list_tools()
         except ExceptionGroup:
-            LOGGER.exception(f"Failed to add MCP server {server_name} at {server_url}.")
+            LOGGER.exception(
+                f"Failed to add MCP server {server_name=} at {server_url=}.",
+                extra={
+                    "event.group": "mcp",
+                    "event.type": "server_registry",
+                    "event.action": "add",
+                    "event.status": "failed",
+                    "mcp.server.name": server_name,
+                    "mcp.server.url": server_url,
+                },
+            )
 
             return Status.FAILURE, []
         except Exception:  # pylint: disable=broad-exception-caught
-            LOGGER.exception(f"Failed to add MCP server {server_name} at {server_url}.")
+            LOGGER.exception(
+                f"Failed to add MCP server {server_name=} at {server_url=}.",
+                extra={
+                    "event.group": "mcp",
+                    "event.type": "server_registry",
+                    "event.action": "add",
+                    "event.status": "failed",
+                    "mcp.server.name": server_name,
+                    "mcp.server.url": server_url,
+                },
+            )
 
             return Status.FAILURE, []
 
@@ -229,6 +261,19 @@ class MCPClient:
         ]
         self.mcp_server_tools[server_name] = processed_server_tools
 
+        LOGGER.info(
+            f"Added MCP server {server_name=} with {len(processed_server_tools)} tools.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "server_registry",
+                "event.action": "add",
+                "event.status": "succeeded",
+                "mcp.server.name": server_name,
+                "mcp.server.url": server_url,
+                "mcp.server.tool_count": len(processed_server_tools),
+            },
+        )
+
         return Status.SUCCESS, [tool.display_name for tool in processed_server_tools]
 
     def list_mcp_servers(self: typing.Self) -> dict[str, dict]:
@@ -239,10 +284,33 @@ class MCPClient:
         dict[str, dict]
             mapping of MCP server names to their URLs
         """
-        return {
+        LOGGER.info(
+            "Listing registered MCP servers.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "server_registry",
+                "event.action": "list",
+                "event.status": "started",
+            },
+        )
+
+        servers = {
             server_name: server_details.model_dump()
             for server_name, server_details in self.mcp_servers.items()
         }
+
+        LOGGER.info(
+            f"Listed {len(servers)} registered MCP servers.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "server_registry",
+                "event.action": "list",
+                "event.status": "succeeded",
+                "mcp.server.count": len(servers),
+            },
+        )
+
+        return servers
 
     def remove_mcp_server(self: typing.Self, server_name: str) -> Status:
         """Remove an MCP server by its name.
@@ -257,13 +325,44 @@ class MCPClient:
         Status
             status of the removal operation
         """
+        LOGGER.info(
+            f"Removing MCP server {server_name=}.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "server_registry",
+                "event.action": "remove",
+                "event.status": "started",
+                "mcp.server.name": server_name,
+            },
+        )
+
         try:
             _ = self.mcp_servers.pop(server_name)
             _ = self.mcp_server_tools.pop(server_name)
         except KeyError:
-            LOGGER.exception(f"Failed to remove MCP server {server_name}.")
+            LOGGER.exception(
+                f"Failed to remove MCP server {server_name=}.",
+                extra={
+                    "event.group": "mcp",
+                    "event.type": "server_registry",
+                    "event.action": "remove",
+                    "event.status": "failed",
+                    "mcp.server.name": server_name,
+                },
+            )
 
             return Status.FAILURE
+
+        LOGGER.info(
+            f"Removed MCP server {server_name=}.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "server_registry",
+                "event.action": "remove",
+                "event.status": "succeeded",
+                "mcp.server.name": server_name,
+            },
+        )
 
         return Status.SUCCESS
 
@@ -284,12 +383,44 @@ class MCPClient:
         dict[str, str]
             mapping of tool names to their display names for the specified MCP server
         """
+        LOGGER.info(
+            f"Listing tools for MCP server {server_name=}.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "tool_catalog",
+                "event.action": "list",
+                "event.status": "started",
+                "mcp.server.name": server_name,
+            },
+        )
+
         try:
             server_tools = self.mcp_server_tools[server_name]
         except KeyError:
-            LOGGER.exception(f"MCP server {server_name} does not exist.")
+            LOGGER.exception(
+                f"MCP server {server_name=} does not exist.",
+                extra={
+                    "event.group": "mcp",
+                    "event.type": "tool_catalog",
+                    "event.action": "list",
+                    "event.status": "failed",
+                    "mcp.server.name": server_name,
+                },
+            )
 
             return Status.FAILURE, {}
+
+        LOGGER.info(
+            f"Listed {len(server_tools)} tools for MCP server {server_name=}.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "tool_catalog",
+                "event.action": "list",
+                "event.status": "succeeded",
+                "mcp.server.name": server_name,
+                "mcp.server.tool_count": len(server_tools),
+            },
+        )
 
         return Status.SUCCESS, {tool.name: tool.display_name for tool in server_tools}
 
@@ -312,18 +443,62 @@ class MCPClient:
         dict | None
             tool details if found, None otherwise
         """
+        LOGGER.info(
+            f"Describing tool {tool_name=} on MCP server {server_name=}.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "tool_catalog",
+                "event.action": "describe",
+                "event.status": "started",
+                "mcp.server.name": server_name,
+                "tool.name": tool_name,
+            },
+        )
+
         try:
             server_tools = self.mcp_server_tools[server_name]
         except KeyError:
-            LOGGER.exception(f"MCP server {server_name} does not exist.")
+            LOGGER.exception(
+                f"MCP server {server_name=} does not exist.",
+                extra={
+                    "event.group": "mcp",
+                    "event.type": "tool_catalog",
+                    "event.action": "describe",
+                    "event.status": "failed",
+                    "mcp.server.name": server_name,
+                    "tool.name": tool_name,
+                },
+            )
 
             return Status.FAILURE, None
 
         for tool in server_tools:
             if tool.name == tool_name:
+                LOGGER.info(
+                    f"Described tool {tool_name=} on MCP server {server_name=}.",
+                    extra={
+                        "event.group": "mcp",
+                        "event.type": "tool_catalog",
+                        "event.action": "describe",
+                        "event.status": "succeeded",
+                        "mcp.server.name": server_name,
+                        "tool.name": tool_name,
+                    },
+                )
+
                 return Status.SUCCESS, tool.model_dump()
 
-        LOGGER.error(f"Tool {tool_name} does not exist in MCP server {server_name}.")
+        LOGGER.error(
+            f"Tool {tool_name=} does not exist in MCP server {server_name=}.",
+            extra={
+                "event.group": "mcp",
+                "event.type": "tool_catalog",
+                "event.action": "describe",
+                "event.status": "failed",
+                "mcp.server.name": server_name,
+                "tool.name": tool_name,
+            },
+        )
 
         return Status.FAILURE, None
 
@@ -431,6 +606,17 @@ class MCPClient:
             input=messages,
             end_on_exit=True,
         ) as sampling_monitoring:
+            LOGGER.debug(
+                f"Starting OpenAI sampling request for tool call {tool_call_id=}.",
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "started",
+                    "tool.call.id": tool_call_id,
+                },
+            )
+
             try:
                 non_streaming_openai_response = (
                     await self.openai_client.get_non_streaming_openai_response(
@@ -441,19 +627,44 @@ class MCPClient:
                     )
                 )
             except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-                LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+                LOGGER.warning(
+                    "Failed to get OpenAI response.",
+                    exc_info=True,
+                    extra={
+                        "event.group": "llm",
+                        "event.type": "request",
+                        "event.action": "request",
+                        "event.status": "failed",
+                    },
+                )
 
-                sampling_monitoring.update(output=f"Failed to get OpenAI response: {error}.")
+                sampling_monitoring.update(output=f"Failed to get OpenAI response: {error=}.")
 
                 return ErrorData(
                     code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error}.",
+                    message=f"Failed to get OpenAI response: {error=}.",
                 )
 
-            LOGGER.debug(f"Received response from OpenAI: {non_streaming_openai_response}.")
+            LOGGER.debug(
+                f"Received response from OpenAI: {non_streaming_openai_response=}.",
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "succeeded",
+                },
+            )
 
             if not (choices := non_streaming_openai_response.choices):
-                LOGGER.warning("Received empty response from OpenAI.")
+                LOGGER.warning(
+                    "Received empty response from OpenAI.",
+                    extra={
+                        "event.group": "llm",
+                        "event.type": "request",
+                        "event.action": "request",
+                        "event.status": "failed",
+                    },
+                )
 
                 sampling_monitoring.update(output="Received empty response from OpenAI.")
 
@@ -529,6 +740,17 @@ class MCPClient:
             input=elicitation_request_messages,
             end_on_exit=True,
         ) as elicitation_request_monitoring:
+            LOGGER.debug(
+                f"Starting OpenAI elicitation request for tool call {tool_call_id=}.",
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "started",
+                    "tool.call.id": tool_call_id,
+                },
+            )
+
             try:
                 elicitation_request_openai_response = (
                     await self.openai_client.get_non_streaming_openai_response(
@@ -536,19 +758,44 @@ class MCPClient:
                     )
                 )
             except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-                LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+                LOGGER.warning(
+                    "Failed to get OpenAI response.",
+                    exc_info=True,
+                    extra={
+                        "event.group": "llm",
+                        "event.type": "request",
+                        "event.action": "request",
+                        "event.status": "failed",
+                    },
+                )
 
                 elicitation_request_monitoring.update(output="Failed to get OpenAI response.")
 
                 return ErrorData(
                     code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error}.",
+                    message=f"Failed to get OpenAI response: {error=}.",
                 )
 
-            LOGGER.debug(f"Received response from OpenAI: {elicitation_request_openai_response}.")
+            LOGGER.debug(
+                f"Received response from OpenAI: {elicitation_request_openai_response=}.",
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "succeeded",
+                },
+            )
 
             if not (choices := elicitation_request_openai_response.choices):
-                LOGGER.warning("Received empty response from OpenAI.")
+                LOGGER.warning(
+                    "Received empty response from OpenAI.",
+                    extra={
+                        "event.group": "llm",
+                        "event.type": "request",
+                        "event.action": "request",
+                        "event.status": "failed",
+                    },
+                )
 
                 elicitation_request_monitoring.update(
                     output="Received empty response from OpenAI."
@@ -589,11 +836,22 @@ class MCPClient:
         ]
 
         with self.langfuse_client.start_as_current_observation(
-            name=f"elicitation response for tool call {tool_call_id}",
+            name=f"elicitation response for tool call {tool_call_id=}",
             as_type="span",
             input=elicitation_response_messages,
             end_on_exit=True,
         ) as elicitation_response_monitoring:
+            LOGGER.debug(
+                f"Starting OpenAI elicitation response request for tool call {tool_call_id=}.",
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "started",
+                    "tool.call.id": tool_call_id,
+                },
+            )
+
             try:
                 elicitation_response_openai_response = (
                     await self.openai_client.get_non_streaming_openai_response(
@@ -601,19 +859,44 @@ class MCPClient:
                     )
                 )
             except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
-                LOGGER.warning("Failed to get OpenAI response.", exc_info=True)
+                LOGGER.warning(
+                    "Failed to get OpenAI response.",
+                    exc_info=True,
+                    extra={
+                        "event.group": "llm",
+                        "event.type": "request",
+                        "event.action": "request",
+                        "event.status": "failed",
+                    },
+                )
 
                 elicitation_response_monitoring.update(output="Failed to get OpenAI response.")
 
                 return ErrorData(
                     code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error}.",
+                    message=f"Failed to get OpenAI response: {error=}.",
                 )
 
-            LOGGER.debug(f"Received response from OpenAI: {elicitation_response_openai_response}.")
+            LOGGER.debug(
+                f"Received response from OpenAI: {elicitation_response_openai_response=}.",
+                extra={
+                    "event.group": "llm",
+                    "event.type": "request",
+                    "event.action": "request",
+                    "event.status": "succeeded",
+                },
+            )
 
             if not (choices := elicitation_response_openai_response.choices):
-                LOGGER.warning("Received empty response from OpenAI.")
+                LOGGER.warning(
+                    "Received empty response from OpenAI.",
+                    extra={
+                        "event.group": "llm",
+                        "event.type": "request",
+                        "event.action": "request",
+                        "event.status": "failed",
+                    },
+                )
 
                 elicitation_response_monitoring.update(
                     output="Received empty response from OpenAI."
@@ -630,12 +913,12 @@ class MCPClient:
                 LOGGER.warning("Failed to parse elicitation response as JSON.", exc_info=True)
 
                 elicitation_response_monitoring.update(
-                    output=f"Failed to parse elicitation response as JSON: {error}."
+                    output=f"Failed to parse elicitation response as JSON: {error=}."
                 )
 
                 return ErrorData(
                     code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to parse elicitation response: {error}.",
+                    message=f"Failed to parse elicitation response: {error=}.",
                 )
 
             elicitation_events["elicitation_correction"] = elicitation_response_message
@@ -660,7 +943,16 @@ class MCPClient:
             parameters for the logging request, including log level and message data
         """
         LOGGER.log(
-            MCP_LOG_LEVELS[parameters.level], parameters.data, extra={"tool_call_id": tool_call_id}
+            MCP_LOG_LEVELS[parameters.level],
+            parameters.data,
+            extra={
+                "event.group": "mcp",
+                "event.type": "remote_log",
+                "event.action": "receive",
+                "event.status": "succeeded",
+                "tool.call.id": tool_call_id,
+                "mcp.remote.log.level": parameters.level,
+            },
         )
 
     @staticmethod
@@ -689,6 +981,20 @@ class MCPClient:
         if message:
             progress_message += f" {message}."
 
+        LOGGER.info(
+            progress_message,
+            extra={
+                "event.group": "mcp",
+                "event.type": "progress",
+                "event.action": "receive",
+                "event.status": "in_progress",
+                "tool.call.id": tool_call_id,
+                "progress.current": progress,
+                "progress.total": total,
+                "progress.message": message,
+            },
+        )
+
         bot_response(progress_message)
 
     async def execute_tool_call(  # noqa: PLR0911
@@ -710,12 +1016,49 @@ class MCPClient:
         str
             JSON string containing the result of the tool call or an error message
         """
+        LOGGER.debug(
+            f"Starting tool call {tool_name=} with the following parameters: {arguments=}.",
+            extra={
+                "event.group": "tool",
+                "event.type": "remote_call",
+                "event.action": "execute",
+                "event.status": "started",
+                "tool.call.id": tool_call_id,
+                "tool.name": tool_name,
+            },
+        )
+
         if not tool_name.startswith("mcp-"):
+            LOGGER.warning(
+                f"Unknown MCP tool {tool_name=}.",
+                extra={
+                    "event.group": "tool",
+                    "event.type": "remote_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.call.id": tool_call_id,
+                    "tool.name": tool_name,
+                },
+            )
+
             return json.dumps({"error": f"Unknown MCP tool {tool_name}."})
 
         _, server_name, actual_tool_name = tool_name.split(sep="-", maxsplit=2)
 
         if server_name not in self.mcp_servers:
+            LOGGER.warning(
+                f"Unknown MCP connection {server_name=} for tool call {tool_name=}.",
+                extra={
+                    "event.group": "tool",
+                    "event.type": "remote_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.call.id": tool_call_id,
+                    "tool.name": actual_tool_name,
+                    "mcp.server.name": server_name,
+                },
+            )
+
             return json.dumps({"error": f"Unknown MCP connection {server_name}."})
 
         server = self.mcp_servers[server_name]
@@ -728,10 +1071,8 @@ class MCPClient:
         }
 
         LOGGER.debug(
-            f"Calling tool {actual_tool_name} "
-            f"as part of tool call {tool_call_id} "
-            f"from MCP server {server_name} ({server.connection_url}) "
-            f"with following parameters: {arguments}."
+            f"Resolved tool call {actual_tool_name=} for MCP server {server_name=} "
+            f"({server.connection_url=}) with the following parameters: {arguments=}."
         )
 
         if self.settings.trace:
@@ -778,24 +1119,54 @@ class MCPClient:
                     )
         except ExceptionGroup:
             LOGGER.warning(
-                f"Failed tool call to {actual_tool_name} of MCP server {server_name}.",
+                f"Failed tool call to {actual_tool_name=} of MCP server {server_name=}.",
                 exc_info=True,
+                extra={
+                    "event.group": "tool",
+                    "event.type": "remote_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.call.id": tool_call_id,
+                    "tool.name": actual_tool_name,
+                    "mcp.server.name": server_name,
+                    "mcp.server.url": server.connection_url,
+                },
             )
 
             return json.dumps({"error": f"Failed tool call to {actual_tool_name}."})
         except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
             LOGGER.warning(
-                f"Failed tool call to {actual_tool_name} of MCP server {server_name}.",
+                f"Failed tool call to {actual_tool_name=} of MCP server {server_name=}.",
                 exc_info=True,
+                extra={
+                    "event.group": "tool",
+                    "event.type": "remote_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.call.id": tool_call_id,
+                    "tool.name": actual_tool_name,
+                    "mcp.server.name": server_name,
+                    "mcp.server.url": server.connection_url,
+                },
             )
 
             return json.dumps({"error": f"Failed tool call to {actual_tool_name}: {error}."})
 
         LOGGER.debug(
-            f"Received response from tool {actual_tool_name} "
-            f"as part of tool call {tool_call_id} "
-            f"of MCP server {server_name} ({server.connection_url}) "
-            f"as following: {tool_result}.\n"
+            f"Received response from tool {actual_tool_name=} "
+            f"for tool call {tool_call_id=} "
+            f"from MCP server {server_name=} ({server.connection_url=}) "
+            f"as follows: {tool_result=}.\n",
+            extra={
+                "event.group": "tool",
+                "event.type": "remote_call",
+                "event.action": "execute",
+                "event.status": "succeeded",
+                "tool.call.id": tool_call_id,
+                "tool.name": actual_tool_name,
+                "mcp.server.name": server_name,
+                "mcp.server.url": server.connection_url,
+            },
         )
 
         if self.settings.trace:
@@ -806,14 +1177,22 @@ class MCPClient:
                 content.text for content in tool_result.content if isinstance(content, TextContent)
             )
 
-            LOGGER.warning(f"Failed tool call to {tool_name=} with {arguments=}: {error_message}.")
+            LOGGER.warning(
+                f"Tool call {tool_name=} failed with {arguments=}: {error_message=}.",
+                extra={
+                    "event.group": "tool",
+                    "event.type": "remote_call",
+                    "event.action": "execute",
+                    "event.status": "failed",
+                    "tool.call.id": tool_call_id,
+                    "tool.name": actual_tool_name,
+                    "mcp.server.name": server_name,
+                    "mcp.server.url": server.connection_url,
+                },
+            )
 
             return json.dumps(
-                {
-                    "error": (
-                        f"Failed tool call to {tool_name=} with {arguments=}: {error_message}."
-                    )
-                }
+                {"error": f"Tool call {tool_name} failed with {arguments}: {error_message}."}
             )
 
         if (structured_result := tool_result.structuredContent) is not None:

@@ -19,9 +19,9 @@ class MissingOptionalDependencyError(Exception):
     """
 
     def __init__(self: typing.Self, install_name: str, import_name: str | None = None) -> None:
-        error_message = f"{install_name} is missing in installed packages."
+        error_message = f"{install_name=} is missing in installed packages."
         if import_name is not None:
-            error_message += f" {import_name} is also unavailable to be imported."
+            error_message += f" {import_name=} is also unavailable to be imported."
 
         super().__init__(error_message)
 

@@ -255,7 +255,8 @@ def resolve_effective_levels(
     if settings.debug:
         if settings.log_level is not None and settings.log_level != LogLevel.DEBUG:
             handle_policy_conflict(
-                settings, f"debug mode ignores conflicting log_level and enforces {LogLevel.DEBUG}"
+                settings,
+                f"Debug mode ignores conflicting log_level and enforces {LogLevel.DEBUG}.",
             )
 
         return stream_level, file_level
@@ -266,7 +267,7 @@ def resolve_effective_levels(
     if stream_level is None and file_level is None:
         handle_policy_conflict(
             settings,
-            "log_level override ignored because policy activates no handlers in this mode",
+            "Log level override ignored because policy activates no handlers in this mode.",
         )
         return stream_level, file_level
 
@@ -296,7 +297,8 @@ def resolve_effective_file_path(
     if policy.file_formatter is None or policy.file_level is None:
         if settings.log_file is not None:
             handle_policy_conflict(
-                settings, "log_file override ignored because file logging is disabled in this mode"
+                settings,
+                "Log file override ignored because file logging is disabled in this mode.",
             )
         return None
 
@@ -312,11 +314,53 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
         shared logging bootstrap inputs
     """
     timestamper = structlog.processors.TimeStamper(fmt="iso", utc=True)
+
+    def inject_base_fields(
+        _: structlog.typing.WrappedLogger, __: str, event_dict: structlog.typing.EventDict
+    ) -> structlog.typing.EventDict:
+        """Inject canonical base fields into the event dictionary.
+
+        Parameters
+        ----------
+        _ : structlog.typing.WrappedLogger
+            bound logger instance (unused)
+        __ : str
+            method name (unused)
+        event_dict : structlog.typing.EventDict
+            mutable event dictionary being processed
+
+        Returns
+        -------
+        structlog.typing.EventDict
+            event dictionary with base fields injected where absent
+        """
+        if "event" in event_dict and "message" not in event_dict:
+            event_dict["message"] = event_dict["event"]
+
+        if "level" in event_dict and "log.level" not in event_dict:
+            event_dict["log.level"] = event_dict["level"]
+
+        if "logger" in event_dict and "logger.name" not in event_dict:
+            event_dict["logger.name"] = event_dict["logger"]
+
+        event_dict.setdefault("event.group", "logging")
+        event_dict.setdefault("event.type", "record")
+        event_dict.setdefault("event.action", "emit")
+        event_dict.setdefault("event.status", "succeeded")
+        event_dict.setdefault("service.name", settings.component)
+        event_dict.setdefault("deployment.environment", settings.runtime_environment)
+        event_dict.setdefault("debug.enabled", settings.debug)
+        event_dict.setdefault("schema.version", "1.0")
+
+        return event_dict
+
     foreign_pre_chain = [
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
+        structlog.stdlib.ExtraAdder(),
         timestamper,
         structlog.processors.format_exc_info,
+        inject_base_fields,
     ]
 
     policy_key = PolicyKey(
@@ -363,7 +407,7 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
             "formatters": {
                 LogFormatter.UNSTRUCTURED: {
                     "()": structlog.stdlib.ProcessorFormatter,
-                    "processor": structlog.dev.ConsoleRenderer(colors=True),
+                    "processor": structlog.dev.ConsoleRenderer(colors=True, event_key="message"),
                     "foreign_pre_chain": foreign_pre_chain,
                 },
                 LogFormatter.STRUCTURED: {
@@ -384,11 +428,24 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
             structlog.stdlib.filter_by_level,
             structlog.stdlib.add_logger_name,
             structlog.stdlib.add_log_level,
+            structlog.stdlib.ExtraAdder(),
             timestamper,
             structlog.processors.format_exc_info,
+            inject_base_fields,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
+
+__all__ = [
+    "LogLevel",
+    "LoggingBootstrapSettings",
+    "LoggingComponent",
+    "RuntimeEnvironment",
+    "get_dated_log_file",
+    "initiate_logging",
+    "resolve_fastmcp_log_level",
+]
