@@ -318,6 +318,7 @@ def main() -> None:
             component=LoggingComponent.MCP_CLIENT,
             debug=settings.debug,
             log_level=settings.log_level,
+            runtime_environment=settings.runtime_environment,
             log_file=settings.log_file,
         )
     )

@@ -9,7 +9,12 @@ import typing
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from ..logging_bootstrap import LoggingBootstrapSettings, LoggingComponent, initiate_logging
+from ..logging_bootstrap import (
+    LoggingBootstrapSettings,
+    LoggingComponent,
+    initiate_logging,
+    resolve_fastmcp_log_level,
+)
 from .arithmetic_operations import (
     add_numbers,
     divide_numbers,
@@ -111,6 +116,16 @@ class ArithmeticMCPServer:
         FastMCP
             configured MCP server instance
         """
+        effective_log_level = resolve_fastmcp_log_level(
+            LoggingBootstrapSettings(
+                component=LoggingComponent.MCP_SERVER,
+                runtime_environment=self.settings.runtime_environment,
+                debug=self.settings.debug,
+                log_level=self.settings.log_level,
+                log_file=self.settings.log_file,
+            )
+        )
+
         return FastMCP(
             name="Basic MCP Server for Demonstration",
             instructions=(
@@ -118,7 +133,7 @@ class ArithmeticMCPServer:
                 " and parse/evaluate arithmetic expressions."
             ),
             debug=self.settings.debug,
-            log_level=self.settings.log_level.value,
+            log_level=effective_log_level,
             host=self.settings.host,
             port=self.settings.port,
             streamable_http_path=self.settings.streamable_http_path,
@@ -225,6 +240,8 @@ def main() -> None:
             component=LoggingComponent.MCP_SERVER,
             debug=settings.debug,
             log_level=settings.log_level,
+            runtime_environment=settings.runtime_environment,
+            log_file=settings.log_file,
         )
     )
 
