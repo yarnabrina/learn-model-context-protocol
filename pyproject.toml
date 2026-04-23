@@ -38,9 +38,9 @@ classifiers = [
 ]
 dependencies = [
   "mcp>=1.27,<2",
-  "openai>=2.31,<3",
-  "pydantic>=2.12.5,<3",
-  "pydantic-settings>=2.13.1,<3",
+  "openai>=2.32,<3",
+  "pydantic>=2.1,<33.3",
+  "pydantic-settings>=2.14,<3",
   "rich>=14.3.4,<15",
   "structlog>=25.5,<26",
 ]
@@ -50,13 +50,13 @@ cli = [
   "prompt-toolkit>=3.0.52,<4",
 ]
 monitoring = [
-  "langfuse>=4.2,<5",
+  "langfuse>=4.5,<5",
 ]
 
 [dependency-groups]
 dev = [
   "pip>=26.0.1",
-  "pre-commit>=4.5.1,<5",
+  "pre-commit>=4.6,<5",
   { include-group = "docs" },
   { include-group = "format" },
   { include-group = "lint" },
@@ -91,7 +91,7 @@ test = [
 ]
 utils = [
   "numpydoc>=1.10,<2",
-  "ruff>=0.15.10,<1",
+  "ruff>=0.15.11,<1",
 ]
 
 [project.urls]
