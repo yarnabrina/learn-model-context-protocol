@@ -489,7 +489,6 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
         structlog.stdlib.add_log_level,
         structlog.stdlib.ExtraAdder(),
         timestamper,
-        structlog.processors.format_exc_info,
         inject_base_fields,
         sanitize_fields,
     ]
