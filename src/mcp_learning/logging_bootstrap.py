@@ -293,7 +293,7 @@ POLICY_MATRIX: dict[PolicyKey, LoggingPolicy] = {
 }
 
 
-def resolve_fastmcp_log_level(settings: LoggingBootstrapSettings) -> str:
+def resolve_fastmcp_log_level(settings: LoggingBootstrapSettings) -> LogLevel:
     """Resolve FastMCP log level from bootstrap inputs.
 
     Parameters
