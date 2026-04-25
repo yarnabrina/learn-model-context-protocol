@@ -37,6 +37,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "fastmcp>=3.2.4,<4",
   "mcp>=1.27,<2",
   "openai>=2.32,<3",
   "pydantic>=2.1,<33.3",
