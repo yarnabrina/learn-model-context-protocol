@@ -8,6 +8,7 @@ import typing
 
 from fastmcp import FastMCP
 from fastmcp.tools import Tool
+from fastmcp.utilities.logging import get_logger
 from mcp.types import ToolAnnotations
 
 from ..logging_bootstrap import (
@@ -29,6 +30,9 @@ from .exponentiation import exponentiate
 from .simplification import evaluate_arithmetic_expression, parse_arithmetic_expression
 
 LOGGER = logging.getLogger(__name__)
+
+CLIENT_LOGGER = get_logger("fastmcp.server.context.to_client")
+CLIENT_LOGGER.setLevel(logging.DEBUG)
 
 
 def create_logged_tool(
