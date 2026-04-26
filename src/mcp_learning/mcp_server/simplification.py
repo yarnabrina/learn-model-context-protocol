@@ -31,6 +31,8 @@ async def parse_arithmetic_expression(text: str, context: Context) -> str:
     TypeError
         if the response content is not of type TextContent
     """
+    await context.debug(f"Received parsing request for {text=}.")
+
     instruction = """You are a calculator assistant.
 
 - Your task is to convert the given text into an arithmetic expression.
@@ -61,7 +63,7 @@ Return only the postfix arithmetic expression without any additional text or exp
 
     expression = content.strip()
 
-    await context.debug(f"Completed parsing {text=} into {expression=}.")
+    await context.info(f"Completed parsing {text=} into {expression=}.")
 
     return expression
 

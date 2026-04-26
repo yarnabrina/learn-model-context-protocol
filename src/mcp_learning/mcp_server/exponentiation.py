@@ -50,6 +50,8 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
         if the base is zero and the exponent is a negative integer
     """
     if not exponent.is_integer():
+        await context.warning(f"Received exponentiation request for {exponent=}.")
+
         await context.report_progress(1, total=2, message="Starting MCP elicitation.")
 
         elicitation_result = await context.elicit(
@@ -63,7 +65,7 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
             case "accept":
                 corrected_exponent = elicitation_result.data.corrected_exponent
 
-                await context.debug(f"User corrected {exponent=} to {corrected_exponent=}.")
+                await context.info(f"User corrected {exponent=} to {corrected_exponent=}.")
             case "decline" | "cancel":
                 await context.error(
                     f"User decided to {elicitation_result.action=} the correction request."
