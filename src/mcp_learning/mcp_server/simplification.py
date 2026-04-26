@@ -50,7 +50,7 @@ Return only the postfix arithmetic expression without any additional text or exp
         max_tokens=2048,
     )
 
-    await context.report_progress(2, 2, "Finished MCP sampling.")
+    await context.report_progress(2, total=2, message="Finished MCP sampling.")
 
     content = response.text
 
