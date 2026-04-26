@@ -1,7 +1,7 @@
 """Provide functionality to raise a number to a power."""
 
 import pydantic
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 
 from .arithmetic_operations import IdentityElements, get_reciprocal, multiply_numbers
 
@@ -10,7 +10,7 @@ class ExponentCorrection(pydantic.BaseModel):
     """Define supported type for exponent."""
 
     corrected_exponent: int = pydantic.Field(
-        description="integer exponent for exponentiation operation"
+        title="Corrected exponent", description="Provide an integer exponent"
     )
 
 
@@ -54,7 +54,7 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
 
         elicitation_result = await context.elicit(
             f"Provided {exponent=} is not an integer, and currently unsupported.",
-            ExponentCorrection,
+            response_type=ExponentCorrection,
         )
 
         await context.report_progress(1, total=2, message="Finished MCP elicitation.")
