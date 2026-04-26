@@ -6,7 +6,7 @@ import functools
 import logging
 import typing
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from ..logging_bootstrap import (
@@ -154,29 +154,17 @@ class ArithmeticMCPServer:
         FastMCP
             configured MCP server instance
         """
-        effective_log_level = resolve_fastmcp_log_level(
-            LoggingBootstrapSettings(
-                component=LoggingComponent.MCP_SERVER,
-                runtime_environment=self.settings.runtime_environment,
-                debug=self.settings.debug,
-                log_level=self.settings.log_level,
-                log_file=self.settings.log_file,
-            )
-        )
-
         return FastMCP(
             name="Basic MCP Server for Demonstration",
             instructions=(
                 "MCP server that can perform basic arithmetic operations"
                 " and parse/evaluate arithmetic expressions."
             ),
-            debug=self.settings.debug,
-            log_level=effective_log_level,
-            host=self.settings.host,
-            port=self.settings.port,
-            streamable_http_path=self.settings.streamable_http_path,
-            json_response=self.settings.json_response,
-            stateless_http=self.settings.stateless_http,
+            version="0.2.0",
+            website_url="https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning",
+            on_duplicate="error",
+            mask_error_details=False,
+            strict_input_validation=True,
         )
 
     def configure_mcp_server_tools(self: typing.Self) -> None:
@@ -317,6 +305,29 @@ def main() -> None:
             "event.action": "start",
             "event.status": "succeeded",
         },
+    )
+
+    effective_log_level = resolve_fastmcp_log_level(
+        LoggingBootstrapSettings(
+            component=LoggingComponent.MCP_SERVER,
+            runtime_environment=settings.runtime_environment,
+            debug=settings.debug,
+            log_level=settings.log_level,
+            log_file=settings.log_file,
+        )
+    )
+
+    asyncio.run(
+        arithmetic_mcp_server.mcp_server.run_http_async(
+            show_banner=False,
+            transport="streamable-http",
+            host=settings.host,
+            port=settings.port,
+            log_level=effective_log_level,
+            path=settings.streamable_http_path,
+            json_response=settings.json_response,
+            stateless_http=settings.stateless_http,
+        )
     )
 
     arithmetic_mcp_server.mcp_server.run(transport="streamable-http")
