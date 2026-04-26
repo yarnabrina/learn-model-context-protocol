@@ -7,6 +7,7 @@ import logging
 import typing
 
 from fastmcp import FastMCP
+from fastmcp.tools import Tool
 from mcp.types import ToolAnnotations
 
 from ..logging_bootstrap import (
@@ -170,90 +171,103 @@ class ArithmeticMCPServer:
     def configure_mcp_server_tools(self: typing.Self) -> None:
         """Configure and add arithmetic operation tools to the MCP server."""
         self.mcp_server.add_tool(
-            create_logged_tool(add_numbers, "addition"),
-            name="addition",
-            title="Add Numbers",
-            description="Perform addition of two real numbers",
-            annotations=ToolAnnotations(title="Addition", readOnlyHint=True, openWorldHint=False),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(add_numbers, "addition"),
+                name="addition",
+                title="Add Numbers",
+                description="Perform addition of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Addition", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(get_negative, "negation"),
-            name="negation",
-            title="Get Negative",
-            description="Get additive inverse of a real number",
-            annotations=ToolAnnotations(
-                title="Additive Inverse", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(get_negative, "negation"),
+                name="negation",
+                title="Get Negative",
+                description="Get additive inverse of a real number",
+                annotations=ToolAnnotations(
+                    title="Additive Inverse", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(subtract_numbers, "subtraction"),
-            name="subtraction",
-            title="Subtract Numbers",
-            description="Perform subtraction of two real numbers",
-            annotations=ToolAnnotations(
-                title="Subtraction", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(subtract_numbers, "subtraction"),
+                name="subtraction",
+                title="Subtract Numbers",
+                description="Perform subtraction of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Subtraction", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(multiply_numbers, "multiplication"),
-            name="multiplication",
-            title="Multiply Numbers",
-            description="Perform multiplication of two real numbers",
-            annotations=ToolAnnotations(
-                title="Multiplication", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(multiply_numbers, "multiplication"),
+                name="multiplication",
+                title="Multiply Numbers",
+                description="Perform multiplication of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Multiplication", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(get_reciprocal, "reciprocal"),
-            name="reciprocal",
-            title="Get Reciprocal",
-            description="Get multiplicative inverse of a real number",
-            annotations=ToolAnnotations(
-                title="Multiplicative Inverse", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(get_reciprocal, "reciprocal"),
+                name="reciprocal",
+                title="Get Reciprocal",
+                description="Get multiplicative inverse of a real number",
+                annotations=ToolAnnotations(
+                    title="Multiplicative Inverse", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(divide_numbers, "division"),
-            name="division",
-            title="Divide Numbers",
-            description="Perform division of two real numbers",
-            annotations=ToolAnnotations(title="Division", readOnlyHint=True, openWorldHint=False),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(divide_numbers, "division"),
+                name="division",
+                title="Divide Numbers",
+                description="Perform division of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Division", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(parse_arithmetic_expression, "parse_expression"),
-            name="parse_expression",
-            title="Parse Arithmetic Expression",
-            description="Parse a text into a valid arithmetic expression",
-            annotations=ToolAnnotations(
-                title="Arithmetic Expression Parser", readOnlyHint=True, openWorldHint=True
-            ),
-            structured_output=False,
+            Tool.from_function(
+                create_logged_tool(parse_arithmetic_expression, "parse_expression"),
+                name="parse_expression",
+                title="Parse Arithmetic Expression",
+                description="Parse a text into a valid arithmetic expression",
+                annotations=ToolAnnotations(
+                    title="Arithmetic Expression Parser", readOnlyHint=True, openWorldHint=True
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(evaluate_arithmetic_expression, "evaluate_expression"),
-            name="evaluate_expression",
-            title="Evaluate Arithmetic Expression",
-            description="Evaluate a valid postfix arithmetic expression",
-            annotations=ToolAnnotations(
-                title="Arithmetic Expression Evaluator", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=False,
+            Tool.from_function(
+                create_logged_tool(evaluate_arithmetic_expression, "evaluate_expression"),
+                name="evaluate_expression",
+                title="Evaluate Arithmetic Expression",
+                description="Evaluate a valid postfix arithmetic expression",
+                annotations=ToolAnnotations(
+                    title="Arithmetic Expression Evaluator", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(exponentiate, "exponentiation"),
-            name="exponentiation",
-            title="Power",
-            description="Raise a base to an exponent",
-            annotations=ToolAnnotations(
-                title="Exponentiation", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(exponentiate, "exponentiation"),
+                name="exponentiation",
+                title="Power",
+                description="Raise a base to an exponent",
+                annotations=ToolAnnotations(
+                    title="Exponentiation", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
 
 
