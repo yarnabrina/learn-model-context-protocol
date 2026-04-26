@@ -293,7 +293,7 @@ POLICY_MATRIX: dict[PolicyKey, LoggingPolicy] = {
 }
 
 
-def resolve_fastmcp_log_level(settings: LoggingBootstrapSettings) -> str:
+def resolve_fastmcp_log_level(settings: LoggingBootstrapSettings) -> LogLevel:
     """Resolve FastMCP log level from bootstrap inputs.
 
     Parameters
@@ -489,7 +489,6 @@ def initiate_logging(settings: LoggingBootstrapSettings) -> None:
         structlog.stdlib.add_log_level,
         structlog.stdlib.ExtraAdder(),
         timestamper,
-        structlog.processors.format_exc_info,
         inject_base_fields,
         sanitize_fields,
     ]

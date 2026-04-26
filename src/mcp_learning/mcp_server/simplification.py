@@ -4,7 +4,7 @@ import enum
 import typing
 
 import pydantic
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from mcp.types import SamplingMessage, TextContent
 
 from .arithmetic_operations import add_numbers, divide_numbers, multiply_numbers, subtract_numbers
@@ -31,6 +31,8 @@ async def parse_arithmetic_expression(text: str, context: Context) -> str:
     TypeError
         if the response content is not of type TextContent
     """
+    await context.debug(f"Received parsing request for {text=}.")
+
     instruction = """You are a calculator assistant.
 
 - Your task is to convert the given text into an arithmetic expression.
@@ -43,26 +45,25 @@ Return only the postfix arithmetic expression without any additional text or exp
 """
     await context.report_progress(1, total=2, message="Started MCP sampling.")
 
-    response = await context.session.create_message(
-        messages=[
-            SamplingMessage(role="user", content=TextContent(type="text", text=f"Text: {text}"))
-        ],
-        max_tokens=2048,
+    response = await context.sample(
+        [SamplingMessage(role="user", content=TextContent(type="text", text=f"Text: {text}"))],
         system_prompt=instruction,
-        include_context="none",
         temperature=0,
+        max_tokens=2048,
     )
 
-    await context.report_progress(2, 2, "Finished MCP sampling.")
+    await context.report_progress(2, total=2, message="Finished MCP sampling.")
 
-    if not isinstance(response.content, TextContent):
-        await context.error(f"Expected response content to be text: {response.content=}.")
+    content = response.text
 
-        raise TypeError(f"Response content is not a text content: {response.content=}.")
+    if not isinstance(content, str):
+        await context.error(f"Expected response content to be text: {content=}.")
 
-    expression = response.content.text.strip()
+        raise TypeError(f"Response content is not a text content: {content=}.")
 
-    await context.debug(f"Completed parsing {text=} into {expression=}.")
+    expression = content.strip()
+
+    await context.info(f"Completed parsing {text=} into {expression=}.")
 
     return expression
 

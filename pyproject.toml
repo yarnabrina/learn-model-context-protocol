@@ -37,6 +37,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "fastmcp>=3.2.4,<4",
   "mcp>=1.27,<2",
   "openai>=2.32,<3",
   "pydantic>=2.1,<33.3",
@@ -50,7 +51,7 @@ cli = [
   "prompt-toolkit>=3.0.52,<4",
 ]
 monitoring = [
-  "langfuse>=4.5,<5",
+  "langfuse>=4.5.1,<5",
 ]
 
 [dependency-groups]
@@ -91,7 +92,7 @@ test = [
 ]
 utils = [
   "numpydoc>=1.10,<2",
-  "ruff>=0.15.11,<1",
+  "ruff>=0.15.12,<1",
 ]
 
 [project.urls]

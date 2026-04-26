@@ -6,7 +6,9 @@ import functools
 import logging
 import typing
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from fastmcp.tools import Tool
+from fastmcp.utilities.logging import get_logger
 from mcp.types import ToolAnnotations
 
 from ..logging_bootstrap import (
@@ -28,6 +30,9 @@ from .exponentiation import exponentiate
 from .simplification import evaluate_arithmetic_expression, parse_arithmetic_expression
 
 LOGGER = logging.getLogger(__name__)
+
+CLIENT_LOGGER = get_logger("fastmcp.server.context.to_client")
+CLIENT_LOGGER.setLevel(logging.DEBUG)
 
 
 def create_logged_tool(
@@ -154,118 +159,119 @@ class ArithmeticMCPServer:
         FastMCP
             configured MCP server instance
         """
-        effective_log_level = resolve_fastmcp_log_level(
-            LoggingBootstrapSettings(
-                component=LoggingComponent.MCP_SERVER,
-                runtime_environment=self.settings.runtime_environment,
-                debug=self.settings.debug,
-                log_level=self.settings.log_level,
-                log_file=self.settings.log_file,
-            )
-        )
-
         return FastMCP(
             name="Basic MCP Server for Demonstration",
             instructions=(
                 "MCP server that can perform basic arithmetic operations"
                 " and parse/evaluate arithmetic expressions."
             ),
-            debug=self.settings.debug,
-            log_level=effective_log_level,
-            host=self.settings.host,
-            port=self.settings.port,
-            streamable_http_path=self.settings.streamable_http_path,
-            json_response=self.settings.json_response,
-            stateless_http=self.settings.stateless_http,
+            version="0.2.0",
+            website_url="https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning",
+            on_duplicate="error",
+            mask_error_details=False,
+            strict_input_validation=True,
         )
 
     def configure_mcp_server_tools(self: typing.Self) -> None:
         """Configure and add arithmetic operation tools to the MCP server."""
         self.mcp_server.add_tool(
-            create_logged_tool(add_numbers, "addition"),
-            name="addition",
-            title="Add Numbers",
-            description="Perform addition of two real numbers",
-            annotations=ToolAnnotations(title="Addition", readOnlyHint=True, openWorldHint=False),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(add_numbers, "addition"),
+                name="addition",
+                title="Add Numbers",
+                description="Perform addition of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Addition", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(get_negative, "negation"),
-            name="negation",
-            title="Get Negative",
-            description="Get additive inverse of a real number",
-            annotations=ToolAnnotations(
-                title="Additive Inverse", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(get_negative, "negation"),
+                name="negation",
+                title="Get Negative",
+                description="Get additive inverse of a real number",
+                annotations=ToolAnnotations(
+                    title="Additive Inverse", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(subtract_numbers, "subtraction"),
-            name="subtraction",
-            title="Subtract Numbers",
-            description="Perform subtraction of two real numbers",
-            annotations=ToolAnnotations(
-                title="Subtraction", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(subtract_numbers, "subtraction"),
+                name="subtraction",
+                title="Subtract Numbers",
+                description="Perform subtraction of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Subtraction", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(multiply_numbers, "multiplication"),
-            name="multiplication",
-            title="Multiply Numbers",
-            description="Perform multiplication of two real numbers",
-            annotations=ToolAnnotations(
-                title="Multiplication", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(multiply_numbers, "multiplication"),
+                name="multiplication",
+                title="Multiply Numbers",
+                description="Perform multiplication of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Multiplication", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(get_reciprocal, "reciprocal"),
-            name="reciprocal",
-            title="Get Reciprocal",
-            description="Get multiplicative inverse of a real number",
-            annotations=ToolAnnotations(
-                title="Multiplicative Inverse", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(get_reciprocal, "reciprocal"),
+                name="reciprocal",
+                title="Get Reciprocal",
+                description="Get multiplicative inverse of a real number",
+                annotations=ToolAnnotations(
+                    title="Multiplicative Inverse", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(divide_numbers, "division"),
-            name="division",
-            title="Divide Numbers",
-            description="Perform division of two real numbers",
-            annotations=ToolAnnotations(title="Division", readOnlyHint=True, openWorldHint=False),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(divide_numbers, "division"),
+                name="division",
+                title="Divide Numbers",
+                description="Perform division of two real numbers",
+                annotations=ToolAnnotations(
+                    title="Division", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(parse_arithmetic_expression, "parse_expression"),
-            name="parse_expression",
-            title="Parse Arithmetic Expression",
-            description="Parse a text into a valid arithmetic expression",
-            annotations=ToolAnnotations(
-                title="Arithmetic Expression Parser", readOnlyHint=True, openWorldHint=True
-            ),
-            structured_output=False,
+            Tool.from_function(
+                create_logged_tool(parse_arithmetic_expression, "parse_expression"),
+                name="parse_expression",
+                title="Parse Arithmetic Expression",
+                description="Parse a text into a valid arithmetic expression",
+                annotations=ToolAnnotations(
+                    title="Arithmetic Expression Parser", readOnlyHint=True, openWorldHint=True
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(evaluate_arithmetic_expression, "evaluate_expression"),
-            name="evaluate_expression",
-            title="Evaluate Arithmetic Expression",
-            description="Evaluate a valid postfix arithmetic expression",
-            annotations=ToolAnnotations(
-                title="Arithmetic Expression Evaluator", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=False,
+            Tool.from_function(
+                create_logged_tool(evaluate_arithmetic_expression, "evaluate_expression"),
+                name="evaluate_expression",
+                title="Evaluate Arithmetic Expression",
+                description="Evaluate a valid postfix arithmetic expression",
+                annotations=ToolAnnotations(
+                    title="Arithmetic Expression Evaluator", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
         self.mcp_server.add_tool(
-            create_logged_tool(exponentiate, "exponentiation"),
-            name="exponentiation",
-            title="Power",
-            description="Raise a base to an exponent",
-            annotations=ToolAnnotations(
-                title="Exponentiation", readOnlyHint=True, openWorldHint=False
-            ),
-            structured_output=True,
+            Tool.from_function(
+                create_logged_tool(exponentiate, "exponentiation"),
+                name="exponentiation",
+                title="Power",
+                description="Raise a base to an exponent",
+                annotations=ToolAnnotations(
+                    title="Exponentiation", readOnlyHint=True, openWorldHint=False
+                ),
+            )
         )
 
 
@@ -317,6 +323,29 @@ def main() -> None:
             "event.action": "start",
             "event.status": "succeeded",
         },
+    )
+
+    effective_log_level = resolve_fastmcp_log_level(
+        LoggingBootstrapSettings(
+            component=LoggingComponent.MCP_SERVER,
+            runtime_environment=settings.runtime_environment,
+            debug=settings.debug,
+            log_level=settings.log_level,
+            log_file=settings.log_file,
+        )
+    )
+
+    asyncio.run(
+        arithmetic_mcp_server.mcp_server.run_http_async(
+            show_banner=False,
+            transport="streamable-http",
+            host=settings.host,
+            port=settings.port,
+            log_level=effective_log_level,
+            path=settings.streamable_http_path,
+            json_response=settings.json_response,
+            stateless_http=settings.stateless_http,
+        )
     )
 
     arithmetic_mcp_server.mcp_server.run(transport="streamable-http")
