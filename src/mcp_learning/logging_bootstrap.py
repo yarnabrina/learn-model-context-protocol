@@ -59,15 +59,16 @@ class LoggingBootstrapSettings:
     component : LoggingComponent
         component whose policy row controls handlers, formatters, and defaults
     debug : bool
-        enables debug policy row; debug mode enforces DEBUG levels from policy
+        enables debug policy row; debug mode forces DEBUG for debug file sinks, while stream
+        levels still follow component-specific policy
     runtime_environment : RuntimeEnvironment, optional
         deployment mode used for conflict handling (warn in local, fail in production),
         by default RuntimeEnvironment.LOCAL
     log_level : LogLevel | None
-        optional override level applied only to handlers activated by non-debug policy,
-        by default None
+        override level applied to active non-debug handlers. Some policies also use an explicit
+        log level as a signal to enable default file logging, by default None
     log_file : str | None, optional
-        optional file path override used only when file handler is policy-enabled,
+        file path that enables file logging when the selected policy supports file output,
         by default None
     """
 
@@ -201,12 +202,30 @@ def get_dated_log_file(component: LoggingComponent) -> str:
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class LoggingPolicy:
-    """Define resolved logging policy for a runtime mode."""
+    """Define resolved logging policy for a runtime mode.
+
+    Attributes
+    ----------
+    stream_formatter : LogFormatter | None
+        formatter used for stream logging, or None if stream logging is disabled
+    stream_level : LogLevel | None
+        default level used for stream logging, or None if stream logging is disabled
+    file_formatter : LogFormatter | None
+        formatter used for file logging, or None if file logging is unsupported
+    file_level : LogLevel | None
+        default level used for file logging, or None if file logging is unsupported
+    file_default_enabled : bool, optional
+        whether file logging is enabled without an explicit log file or log level, by default False
+    file_enabled_by_log_level : bool, optional
+        whether an explicit log level should enable the default dated log file, by default False
+    """
 
     stream_formatter: LogFormatter | None
     stream_level: LogLevel | None
     file_formatter: LogFormatter | None
     file_level: LogLevel | None
+    file_default_enabled: bool = False
+    file_enabled_by_log_level: bool = False
 
 
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
@@ -226,8 +245,8 @@ POLICY_MATRIX: dict[PolicyKey, LoggingPolicy] = {
     ): LoggingPolicy(
         stream_formatter=LogFormatter.UNSTRUCTURED,
         stream_level=LogLevel.INFO,
-        file_formatter=None,
-        file_level=None,
+        file_formatter=LogFormatter.STRUCTURED,
+        file_level=LogLevel.INFO,
     ),
     PolicyKey(
         component=LoggingComponent.MCP_SERVER,
@@ -238,6 +257,7 @@ POLICY_MATRIX: dict[PolicyKey, LoggingPolicy] = {
         stream_level=LogLevel.DEBUG,
         file_formatter=LogFormatter.STRUCTURED,
         file_level=LogLevel.DEBUG,
+        file_default_enabled=True,
     ),
     PolicyKey(
         component=LoggingComponent.MCP_SERVER,
@@ -246,8 +266,8 @@ POLICY_MATRIX: dict[PolicyKey, LoggingPolicy] = {
     ): LoggingPolicy(
         stream_formatter=LogFormatter.STRUCTURED,
         stream_level=LogLevel.INFO,
-        file_formatter=None,
-        file_level=None,
+        file_formatter=LogFormatter.STRUCTURED,
+        file_level=LogLevel.INFO,
     ),
     PolicyKey(
         component=LoggingComponent.MCP_SERVER,
@@ -256,15 +276,19 @@ POLICY_MATRIX: dict[PolicyKey, LoggingPolicy] = {
     ): LoggingPolicy(
         stream_formatter=LogFormatter.STRUCTURED,
         stream_level=LogLevel.DEBUG,
-        file_formatter=None,
-        file_level=None,
+        file_formatter=LogFormatter.STRUCTURED,
+        file_level=LogLevel.DEBUG,
     ),
     PolicyKey(
         component=LoggingComponent.MCP_CLIENT,
         runtime_environment=RuntimeEnvironment.LOCAL,
         debug=False,
     ): LoggingPolicy(
-        stream_formatter=None, stream_level=None, file_formatter=None, file_level=None
+        stream_formatter=None,
+        stream_level=None,
+        file_formatter=LogFormatter.STRUCTURED,
+        file_level=LogLevel.INFO,
+        file_enabled_by_log_level=True,
     ),
     PolicyKey(
         component=LoggingComponent.MCP_CLIENT,
@@ -272,23 +296,32 @@ POLICY_MATRIX: dict[PolicyKey, LoggingPolicy] = {
         debug=True,
     ): LoggingPolicy(
         stream_formatter=LogFormatter.UNSTRUCTURED,
-        stream_level=LogLevel.DEBUG,
+        stream_level=LogLevel.WARNING,
         file_formatter=LogFormatter.STRUCTURED,
         file_level=LogLevel.DEBUG,
+        file_default_enabled=True,
     ),
     PolicyKey(
         component=LoggingComponent.MCP_CLIENT,
         runtime_environment=RuntimeEnvironment.PRODUCTION,
         debug=False,
     ): LoggingPolicy(
-        stream_formatter=None, stream_level=None, file_formatter=None, file_level=None
+        stream_formatter=None,
+        stream_level=None,
+        file_formatter=LogFormatter.STRUCTURED,
+        file_level=LogLevel.INFO,
+        file_enabled_by_log_level=True,
     ),
     PolicyKey(
         component=LoggingComponent.MCP_CLIENT,
         runtime_environment=RuntimeEnvironment.PRODUCTION,
         debug=True,
     ): LoggingPolicy(
-        stream_formatter=None, stream_level=None, file_formatter=None, file_level=None
+        stream_formatter=LogFormatter.UNSTRUCTURED,
+        stream_level=LogLevel.WARNING,
+        file_formatter=LogFormatter.STRUCTURED,
+        file_level=LogLevel.DEBUG,
+        file_default_enabled=True,
     ),
 }
 
@@ -406,7 +439,16 @@ def resolve_effective_file_path(
             )
         return None
 
-    return settings.log_file or get_dated_log_file(settings.component)
+    if settings.log_file is not None:
+        return settings.log_file
+
+    if policy.file_default_enabled:
+        return get_dated_log_file(settings.component)
+
+    if settings.log_level is not None and policy.file_enabled_by_log_level:
+        return get_dated_log_file(settings.component)
+
+    return None
 
 
 def initiate_logging(settings: LoggingBootstrapSettings) -> None:
