@@ -3,7 +3,6 @@
 import dataclasses
 import enum
 import functools
-import http
 import json
 import logging
 import typing
@@ -15,6 +14,7 @@ from fastmcp.client.elicitation import ElicitResult
 from mcp.shared.context import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
+    INTERNAL_ERROR,
     CreateMessageRequestParams,
     CreateMessageResult,
     ElicitRequestParams,
@@ -639,8 +639,7 @@ class MCPClient:
                 sampling_monitoring.update(output=f"Failed to get OpenAI response: {error=}.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to get OpenAI response: {error=}."
                 )
 
             LOGGER.debug(
@@ -667,8 +666,7 @@ class MCPClient:
                 sampling_monitoring.update(output="Received empty response from OpenAI.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message="No choices returned from OpenAI API.",
+                    code=INTERNAL_ERROR, message="No choices returned from OpenAI API."
                 )
 
             choice = choices[0]
@@ -778,8 +776,7 @@ class MCPClient:
                 elicitation_request_monitoring.update(output="Failed to get OpenAI response.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to get OpenAI response: {error=}."
                 )
 
             LOGGER.debug(
@@ -808,8 +805,7 @@ class MCPClient:
                 )
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message="No choices returned from OpenAI API.",
+                    code=INTERNAL_ERROR, message="No choices returned from OpenAI API."
                 )
 
             elicitation_request_message = choices[0].message.content or ""
@@ -880,8 +876,7 @@ class MCPClient:
                 elicitation_response_monitoring.update(output="Failed to get OpenAI response.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to get OpenAI response: {error=}."
                 )
 
             LOGGER.debug(
@@ -910,8 +905,7 @@ class MCPClient:
                 )
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message="No choices returned from OpenAI API.",
+                    code=INTERNAL_ERROR, message="No choices returned from OpenAI API."
                 )
 
             try:
@@ -924,8 +918,7 @@ class MCPClient:
                 )
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to parse elicitation response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to parse elicitation response: {error=}."
                 )
 
             elicitation_events["elicitation_correction"] = elicitation_response_message
@@ -955,7 +948,7 @@ class MCPClient:
                 LOGGER.error("Elicitation response is unacceptable.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    code=INTERNAL_ERROR,
                     message=f"Unacceptable elicitation response: {elicitation_response_message=}.",
                 )
 
