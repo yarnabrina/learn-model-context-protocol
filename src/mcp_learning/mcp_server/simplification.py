@@ -91,8 +91,23 @@ class InvalidOperatorError(Exception):
         super().__init__(f"Unsupported operator encountered: {operator=}.")
 
 
+class InvalidExpressionError(Exception):
+    """Raised when invalid arithmetic expressions are encountered.
+
+    Parameters
+    ----------
+    expression : str
+        the invalid expression that caused the error
+    reason : str
+        the reason why the expression is invalid
+    """
+
+    def __init__(self: typing.Self, expression: str, reason: str) -> None:
+        super().__init__(f"Invalid arithmetic expression encountered: {expression=}, {reason=}.")
+
+
 @pydantic.validate_call(validate_return=True)
-async def evaluate_arithmetic_expression(expression: str) -> float:
+async def evaluate_arithmetic_expression(expression: str) -> float:  # noqa: C901
     """Evaluate postfix arithmetic expression in reverse Polish notation.
 
     Parameters
@@ -104,6 +119,13 @@ async def evaluate_arithmetic_expression(expression: str) -> float:
     -------
     float
         result of arithmetic expression
+
+    Raises
+    ------
+    InvalidOperatorError
+        if the expression contains an unsupported operator
+    InvalidExpressionError
+        if the expression is not a valid postfix arithmetic expression
     """
     stack: list[float] = []
     for token in expression.split():
@@ -118,6 +140,12 @@ async def evaluate_arithmetic_expression(expression: str) -> float:
             stack.append(element)
 
             continue
+
+        if len(stack) < 2:  # noqa: PLR2004
+            raise InvalidExpressionError(
+                expression,
+                f"operator {operator.value!r} requires two operands, found {len(stack)}",
+            )
 
         second_input = stack.pop()
         first_input = stack.pop()
@@ -134,10 +162,16 @@ async def evaluate_arithmetic_expression(expression: str) -> float:
 
         stack.append(result)
 
-    return stack.pop()
+    if len(stack) != 1:
+        raise InvalidExpressionError(
+            expression, f"expected exactly one final result, found {len(stack)} values"
+        )
+
+    return stack[0]
 
 
 __all__ = [
+    "InvalidExpressionError",
     "InvalidOperatorError",
     "SimpleArithmeticOperator",
     "evaluate_arithmetic_expression",

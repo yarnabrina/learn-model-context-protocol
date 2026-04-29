@@ -2,6 +2,7 @@
 
 import pydantic
 from fastmcp import Context
+from fastmcp.server.elicitation import CancelledElicitation, DeclinedElicitation
 
 from .arithmetic_operations import IdentityElements, get_reciprocal, multiply_numbers
 
@@ -56,22 +57,22 @@ async def exponentiate(base: float, exponent: float, context: Context) -> Expone
 
         elicitation_result = await context.elicit(
             f"Provided {exponent=} is not an integer, and currently unsupported.",
-            response_type=ExponentCorrection,
+            ExponentCorrection,
         )
 
         await context.report_progress(1, total=2, message="Finished MCP elicitation.")
 
-        match elicitation_result.action:
-            case "accept":
-                corrected_exponent = elicitation_result.data.corrected_exponent
-
-                await context.info(f"User corrected {exponent=} to {corrected_exponent=}.")
-            case "decline" | "cancel":
+        match elicitation_result:
+            case CancelledElicitation() | DeclinedElicitation():
                 await context.error(
                     f"User decided to {elicitation_result.action=} the correction request."
                 )
 
                 raise NotImplementedError("Only integer powers are currently supported.")
+            case _:
+                corrected_exponent = elicitation_result.data.corrected_exponent
+
+                await context.info(f"User corrected {exponent=} to {corrected_exponent=}.")
 
         exponent = corrected_exponent
 

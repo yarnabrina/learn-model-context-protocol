@@ -348,8 +348,6 @@ def main() -> None:
         )
     )
 
-    arithmetic_mcp_server.mcp_server.run(transport="streamable-http")
-
 
 if __name__ == "__main__":
     main()

@@ -39,7 +39,7 @@ classifiers = [
 dependencies = [
   "fastmcp>=3.2.4,<4",
   "mcp>=1.27,<2",
-  "openai>=2.32,<3",
+  "openai>=2.33,<3",
   "pydantic>=2.1,<33.3",
   "pydantic-settings>=2.14,<3",
   "rich>=14.3.4,<15",
@@ -56,7 +56,7 @@ monitoring = [
 
 [dependency-groups]
 dev = [
-  "pip>=26.0.1",
+  "pip>=26.1",
   "pre-commit>=4.6,<5",
   { include-group = "docs" },
   { include-group = "format" },
@@ -100,8 +100,8 @@ source = "https://github.com/yarnabrina/learn-model-context-protocol"
 documentation = "https://yarnabrina.github.io/learn-model-context-protocol/"
 
 [project.scripts]
-mcp-server = "mcp_learning:mcp_server_main"
-mcp-client = "mcp_learning:mcp_client_main"
+mcp-server = "mcp_learning:mcp_server.mcp_server_main"
+mcp-client = "mcp_learning:mcp_client.mcp_client_main"
 
 [tool.black]
 line-length = 99

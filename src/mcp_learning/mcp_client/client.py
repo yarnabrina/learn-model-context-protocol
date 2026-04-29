@@ -1,30 +1,33 @@
 """Implement client-side logic for MCP server management."""
 
+import dataclasses
 import enum
 import functools
-import http
 import json
 import logging
 import typing
 
-import httpx
 import pydantic
-from mcp import ClientSession
-from mcp.client.streamable_http import streamable_http_client
+from fastmcp import Client
+from fastmcp.client import StreamableHttpTransport
+from fastmcp.client.elicitation import ElicitResult
 from mcp.shared.context import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
+    INTERNAL_ERROR,
     CreateMessageRequestParams,
     CreateMessageResult,
     ElicitRequestParams,
-    ElicitResult,
     ErrorData,
     LoggingMessageNotificationParams,
+    SamplingCapability,
+    SamplingMessage,
     TextContent,
     ToolAnnotations,
 )
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
+    ChatCompletionDeveloperMessageParam,
     ChatCompletionSystemMessageParam,
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
@@ -117,6 +120,25 @@ class MCPTool(pydantic.BaseModel):
     annotations: ToolAnnotations | None = None
     server_name: str
 
+    @pydantic.model_validator(mode="after")
+    def validate_configurations(self: typing.Self) -> typing.Self:
+        """Validate that the provided tool name is valid.
+
+        Raises
+        ------
+        ValueError
+            if the provided tool name is invalid
+
+        Returns
+        -------
+        MCPTool
+            validated configurations
+        """
+        if "--" in self.name:
+            raise ValueError("'--' is restricted in name of MCP tools.")
+
+        return self
+
 
 class Status(enum.StrEnum):
     """Define the status of an MCP server operation."""
@@ -205,16 +227,13 @@ class MCPClient:
             name=server_name, connection_url=server_url, connection_headers=server_headers
         )
 
-        http_client = httpx.AsyncClient(headers=server.connection_headers)
+        transport = StreamableHttpTransport(
+            server.connection_url, headers=server.connection_headers
+        )
 
         try:
-            async with streamable_http_client(  # noqa: SIM117
-                server.connection_url, http_client=http_client
-            ) as (read_stream, write_stream, _):
-                async with ClientSession(read_stream, write_stream) as session:
-                    await session.initialize()
-
-                    server_tools = await session.list_tools()
+            async with Client(transport, auto_initialize=True) as client:
+                server_tools = await client.list_tools()
         except ExceptionGroup:
             LOGGER.exception(
                 f"Failed to add MCP server {server_name=} at {server_url=}.",
@@ -244,21 +263,37 @@ class MCPClient:
 
             return Status.FAILURE, []
 
+        try:
+            processed_server_tools = [
+                MCPTool(
+                    name=tool.name,
+                    display_name=get_display_name(tool),
+                    title=tool.title,
+                    description=tool.description,
+                    input_schema=tool.inputSchema,
+                    output_schema=tool.outputSchema,
+                    annotations=tool.annotations,
+                    server_name=server.name,
+                )
+                for tool in server_tools
+            ]
+        except Exception:  # pylint: disable=broad-exception-caught
+            LOGGER.exception(
+                f"Failed to validate tools in MCP server {server_name=} at {server_url=}.",
+                extra={
+                    "event.group": "mcp",
+                    "event.type": "server_registry",
+                    "event.action": "add",
+                    "event.status": "failed",
+                    "mcp.server.name": server_name,
+                    "mcp.server.url": server_url,
+                },
+            )
+
+            return Status.FAILURE, []
+
         self.mcp_servers[server.name] = server
 
-        processed_server_tools = [
-            MCPTool(
-                name=tool.name,
-                display_name=get_display_name(tool),
-                title=tool.title,
-                description=tool.description,
-                input_schema=tool.inputSchema,
-                output_schema=tool.outputSchema,
-                annotations=tool.annotations,
-                server_name=server.name,
-            )
-            for tool in server_tools.tools
-        ]
         self.mcp_server_tools[server_name] = processed_server_tools
 
         LOGGER.info(
@@ -513,7 +548,7 @@ class MCPClient:
         return [
             ChatCompletionToolParam(
                 function=FunctionDefinition(
-                    name=f"mcp-{server_name}-{tool.name}",
+                    name=f"mcp--{server_name}--{tool.name}",
                     description=tool.description or "",
                     parameters=tool.input_schema,
                 ),
@@ -526,8 +561,9 @@ class MCPClient:
     async def sampling_handler(
         self: typing.Self,
         tool_call_id: str,
-        context: RequestContext,
+        messages: list[SamplingMessage],
         parameters: CreateMessageRequestParams,
+        context: RequestContext,
     ) -> CreateMessageResult | ErrorData:
         """Handle sampling requests for OpenAI API calls with MCP tools.
 
@@ -535,10 +571,12 @@ class MCPClient:
         ----------
         tool_call_id : str
             unique identifier for the tool call
-        context : RequestContext
-            request context containing information about the sampling request
+        messages : list[SamplingMessage]
+            conversations to pass to LLM
         parameters : CreateMessageRequestParams
             parameters for the sampling request, including messages and customisations
+        context : RequestContext
+            request context containing information about the sampling request
 
         Returns
         -------
@@ -556,7 +594,7 @@ class MCPClient:
                     if isinstance(message.content, TextContent)
                     else str(message.content)
                 )
-                for message in parameters.messages
+                for message in messages
             ]
         }
 
@@ -571,39 +609,18 @@ class MCPClient:
         if (stop_sequences := parameters.stopSequences) is not None:
             openai_customisations["stop"] = stop_sequences
 
-        messages = [
-            ChatCompletionUserMessageParam(content=message, role="user")
+        conversation = [
+            ChatCompletionDeveloperMessageParam(content=message, role="developer")
             for message in sampling_events["server_messages"]
         ]
 
-        available_openai_tools = await self.get_all_openai_functions()
-
-        match parameters.includeContext:
-            case "none":
-                filtered_openai_tools = []
-            case "thisServer":
-                filtered_openai_tools = [
-                    tool
-                    for tool in available_openai_tools
-                    if tool["function"]["name"].endswith(
-                        self.tool_call_events[tool_call_id]["tool_name"]
-                    )
-                ]
-            case "allServers":
-                filtered_openai_tools = available_openai_tools
-            case None:
-                filtered_openai_tools = [
-                    tool
-                    for tool in available_openai_tools
-                    if not tool["function"]["name"].endswith(
-                        self.tool_call_events[tool_call_id]["tool_name"]
-                    )
-                ]
+        # TODO (@yarnabrina): enable tools for sampling
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/37
 
         with self.langfuse_client.start_as_current_observation(
             name=f"sampling for tool call {tool_call_id}",
             as_type="span",
-            input=messages,
+            input=conversation,
             end_on_exit=True,
         ) as sampling_monitoring:
             LOGGER.debug(
@@ -620,9 +637,8 @@ class MCPClient:
             try:
                 non_streaming_openai_response = (
                     await self.openai_client.get_non_streaming_openai_response(
-                        messages,
+                        conversation,
                         system_prompt=parameters.systemPrompt,
-                        tools=filtered_openai_tools,
                         openai_customisations=openai_customisations,
                     )
                 )
@@ -641,8 +657,7 @@ class MCPClient:
                 sampling_monitoring.update(output=f"Failed to get OpenAI response: {error=}.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to get OpenAI response: {error=}."
                 )
 
             LOGGER.debug(
@@ -669,8 +684,7 @@ class MCPClient:
                 sampling_monitoring.update(output="Received empty response from OpenAI.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message="No choices returned from OpenAI API.",
+                    code=INTERNAL_ERROR, message="No choices returned from OpenAI API."
                 )
 
             choice = choices[0]
@@ -690,11 +704,13 @@ class MCPClient:
             stopReason=choice.finish_reason,
         )
 
-    async def elicitation_handler(
+    async def elicitation_handler(  # noqa: PLR0911, PLR0915
         self: typing.Self,
         tool_call_id: str,
-        context: RequestContext,
+        message: str,
+        response_type: type | None,
         parameters: ElicitRequestParams,
+        context: RequestContext,
     ) -> ElicitResult | ErrorData:
         """Handle elicitation requests for MCP tools.
 
@@ -702,10 +718,14 @@ class MCPClient:
         ----------
         tool_call_id : str
             unique identifier for the tool call
-        context : RequestContext
-            request context containing information about the elicitation request
+        message : str
+            prompt to display to user
+        response_type : type | None
+            kind of response
         parameters : ElicitRequestParams
             parameters for the elicitation request, including message and requested schema
+        context : RequestContext
+            request context containing information about the elicitation request
 
         Returns
         -------
@@ -716,21 +736,23 @@ class MCPClient:
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
 
+        # TODO (@yarnabrina): find out how to use response_type
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/36
+        del response_type
+
         elicitation_events = {
-            "server_message": parameters.message,
+            "server_message": message,
             "requested_schema": parameters.requestedSchema,
         }
 
         elicitation_request_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_REQUEST_PROMPT, role="system"),
-            ChatCompletionAssistantMessageParam(
-                role="assistant",
-                content="\n".join(
-                    [
-                        f"MCP Server Message: {parameters.message}",
-                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
-                    ]
-                ),
+            ChatCompletionDeveloperMessageParam(
+                content=elicitation_events["server_message"], role="developer"
+            ),
+            ChatCompletionDeveloperMessageParam(
+                content=f"MCP Server Requested Schema: {elicitation_events['requested_schema']}",
+                role="developer",
             ),
         ]
 
@@ -772,8 +794,7 @@ class MCPClient:
                 elicitation_request_monitoring.update(output="Failed to get OpenAI response.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to get OpenAI response: {error=}."
                 )
 
             LOGGER.debug(
@@ -802,8 +823,7 @@ class MCPClient:
                 )
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message="No choices returned from OpenAI API.",
+                    code=INTERNAL_ERROR, message="No choices returned from OpenAI API."
                 )
 
             elicitation_request_message = choices[0].message.content or ""
@@ -820,14 +840,12 @@ class MCPClient:
 
         elicitation_response_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_RESPONSE_PROMPT, role="system"),
-            ChatCompletionAssistantMessageParam(
-                role="assistant",
-                content="\n".join(
-                    [
-                        f"MCP Server Message: {parameters.message}",
-                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
-                    ]
-                ),
+            ChatCompletionDeveloperMessageParam(
+                content=elicitation_events["server_message"], role="developer"
+            ),
+            ChatCompletionDeveloperMessageParam(
+                content=f"MCP Server Requested Schema: {elicitation_events['requested_schema']}",
+                role="developer",
             ),
             ChatCompletionAssistantMessageParam(
                 role="assistant", content=elicitation_request_message
@@ -873,8 +891,7 @@ class MCPClient:
                 elicitation_response_monitoring.update(output="Failed to get OpenAI response.")
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to get OpenAI response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to get OpenAI response: {error=}."
                 )
 
             LOGGER.debug(
@@ -903,8 +920,7 @@ class MCPClient:
                 )
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message="No choices returned from OpenAI API.",
+                    code=INTERNAL_ERROR, message="No choices returned from OpenAI API."
                 )
 
             try:
@@ -917,8 +933,7 @@ class MCPClient:
                 )
 
                 return ErrorData(
-                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    message=f"Failed to parse elicitation response: {error=}.",
+                    code=INTERNAL_ERROR, message=f"Failed to parse elicitation response: {error=}."
                 )
 
             elicitation_events["elicitation_correction"] = elicitation_response_message
@@ -927,7 +942,45 @@ class MCPClient:
 
         self.tool_call_events[tool_call_id]["elicitation_events"] = elicitation_events
 
-        return elicitation_response_message
+        if (
+            not isinstance(elicitation_response_message, dict)
+            or "action" not in elicitation_response_message
+        ):
+            LOGGER.error("Elicitation response is not in correct format.")
+
+            return ErrorData(
+                code=INTERNAL_ERROR,
+                message=(
+                    f"Unacceptable elicitation response format: {elicitation_response_message=}."
+                ),
+            )
+
+        match action := elicitation_response_message["action"]:
+            case "cancel" | "decline":
+                LOGGER.warning(f"Elicitation is refused by user: {action=}.")
+
+                return ElicitResult(action=action)
+            case "accept":
+                if "content" not in elicitation_response_message:
+                    LOGGER.error("Elicitation response lacks needed information.")
+
+                    return ErrorData(
+                        code=INTERNAL_ERROR,
+                        message=(
+                            f"Elicitation response is incomplete: {elicitation_response_message=}."
+                        ),
+                    )
+
+                return ElicitResult(
+                    action="accept", content=elicitation_response_message["content"]
+                )
+            case _:
+                LOGGER.error("Unexpected elicitation action.")
+
+                return ErrorData(
+                    code=INTERNAL_ERROR,
+                    message=f"Unexpected elicitation action: {elicitation_response_message=}.",
+                )
 
     @staticmethod
     async def logging_handler(
@@ -942,9 +995,15 @@ class MCPClient:
         parameters : LoggingMessageNotificationParams
             parameters for the logging request, including log level and message data
         """
+        log_level = MCP_LOG_LEVELS[parameters.level]
+
+        log_message = str(parameters.data)
+        if (logger := parameters.logger) is not None:
+            log_message += f" ({logger})"
+
         LOGGER.log(
-            MCP_LOG_LEVELS[parameters.level],
-            parameters.data,
+            log_level,
+            log_message,
             extra={
                 "event.group": "mcp",
                 "event.type": "remote_log",
@@ -952,12 +1011,14 @@ class MCPClient:
                 "event.status": "succeeded",
                 "tool.call.id": tool_call_id,
                 "mcp.remote.log.level": parameters.level,
+                "mcp.remote.log.logger": parameters.logger,
+                "mcp.remote.log.data": parameters.data,
             },
         )
 
     @staticmethod
     async def progress_handler(
-        tool_call_id: str, progress: float, total: float | None = None, message: str | None = None
+        tool_call_id: str, progress: float, total: float | None, message: str | None
     ) -> None:
         """Report progress for MCP tools.
 
@@ -967,14 +1028,19 @@ class MCPClient:
             unique identifier for the tool call
         progress : float
             current progress value
-        total : float | None, optional
-            total progress value, by default None
-        message : str | None, optional
-            optional message to accompany the progress report, by default None
+        total : float | None
+            total progress value
+        message : str | None
+            optional message to accompany the progress report
         """
         completion = f"{progress}"
+
         if total is not None:
             completion += f"/{total}"
+
+            if total != 0:
+                percentage = 100 * (progress / total)
+                completion += f" ({percentage:.2f}%)"
 
         progress_message = f"Progress of {tool_call_id}: {completion}."
 
@@ -1007,7 +1073,7 @@ class MCPClient:
         tool_call_id : str
             unique identifier for the tool call
         tool_name : str
-            name of the tool to call, formatted as "mcp-{server_name}-{tool_name}"
+            name of the tool to call, formatted as "mcp--{server_name}--{tool_name}"
         arguments : dict
             arguments to pass to the tool call
 
@@ -1028,7 +1094,7 @@ class MCPClient:
             },
         )
 
-        if not tool_name.startswith("mcp-"):
+        if not tool_name.startswith("mcp--"):
             LOGGER.warning(
                 f"Unknown MCP tool {tool_name=}.",
                 extra={
@@ -1043,7 +1109,7 @@ class MCPClient:
 
             return json.dumps({"error": f"Unknown MCP tool {tool_name}."})
 
-        _, server_name, actual_tool_name = tool_name.split(sep="-", maxsplit=2)
+        _, server_name, actual_tool_name = tool_name.split(sep="--", maxsplit=2)
 
         if server_name not in self.mcp_servers:
             LOGGER.warning(
@@ -1083,6 +1149,9 @@ class MCPClient:
             if self.settings.sampling
             else None
         )
+        sampling_capabilities_declaration = (
+            SamplingCapability() if self.settings.sampling else None
+        )
         elicitation_handler = (
             functools.partial(self.elicitation_handler, tool_call_id)
             if self.settings.elicitation
@@ -1099,24 +1168,21 @@ class MCPClient:
             else None
         )
 
-        http_client = httpx.AsyncClient(headers=server.connection_headers)
+        transport = StreamableHttpTransport(
+            server.connection_url, headers=server.connection_headers
+        )
 
         try:
-            async with streamable_http_client(  # noqa: SIM117
-                server.connection_url, http_client=http_client
-            ) as (read_stream, write_stream, _):
-                async with ClientSession(
-                    read_stream,
-                    write_stream,
-                    sampling_callback=sampling_handler,
-                    elicitation_callback=elicitation_handler,
-                    logging_callback=logging_handler,
-                ) as session:
-                    await session.initialize()
-
-                    tool_result = await session.call_tool(
-                        actual_tool_name, arguments=arguments, progress_callback=progress_handler
-                    )
+            async with Client(
+                transport,
+                sampling_handler=sampling_handler,
+                sampling_capabilities=sampling_capabilities_declaration,
+                elicitation_handler=elicitation_handler,
+                log_handler=logging_handler,
+            ) as client:
+                tool_result = await client.call_tool(
+                    actual_tool_name, arguments=arguments, progress_handler=progress_handler
+                )
         except ExceptionGroup:
             LOGGER.warning(
                 f"Failed tool call to {actual_tool_name=} of MCP server {server_name=}.",
@@ -1170,9 +1236,9 @@ class MCPClient:
         )
 
         if self.settings.trace:
-            trace_tool_output(actual_tool_name, tool_result.model_dump())
+            trace_tool_output(actual_tool_name, dataclasses.asdict(tool_result))
 
-        if tool_result.isError:
+        if tool_result.is_error:
             error_message = "".join(
                 content.text for content in tool_result.content if isinstance(content, TextContent)
             )
@@ -1195,7 +1261,7 @@ class MCPClient:
                 {"error": f"Tool call {tool_name} failed with {arguments}: {error_message}."}
             )
 
-        if (structured_result := tool_result.structuredContent) is not None:
+        if (structured_result := tool_result.structured_content) is not None:
             return json.dumps(structured_result)
 
         return json.dumps([element.model_dump() for element in tool_result.content])

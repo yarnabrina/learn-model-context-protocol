@@ -163,6 +163,11 @@ class ChatInterface:
         server_url: str = command_inputs["server_url"]
         server_headers: str = command_inputs["server_headers"]
 
+        if "--" in server_name:
+            bot_response("'--' is restricted in name of MCP servers.")
+
+            return
+
         try:
             parsed_server_headers: dict = json.loads(server_headers) if server_headers else {}
         except json.JSONDecodeError:
