@@ -721,21 +721,17 @@ class MCPClient:
         del context
 
         elicitation_events = {
-            "server_instruction": message,
-            "server_message": parameters.message,
+            "server_message": message,
             "requested_schema": parameters.requestedSchema,
         }
 
         elicitation_request_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_REQUEST_PROMPT, role="system"),
-            ChatCompletionAssistantMessageParam(role="assistant", content=message),
             ChatCompletionDeveloperMessageParam(
-                content="\n".join(
-                    [
-                        f"MCP Server Message: {parameters.message}",
-                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
-                    ]
-                ),
+                content=elicitation_events["server_message"], role="developer"
+            ),
+            ChatCompletionDeveloperMessageParam(
+                content=f"MCP Server Requested Schema: {elicitation_events['requested_schema']}",
                 role="developer",
             ),
         ]
@@ -824,14 +820,11 @@ class MCPClient:
 
         elicitation_response_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_RESPONSE_PROMPT, role="system"),
-            ChatCompletionAssistantMessageParam(role="assistant", content=message),
             ChatCompletionDeveloperMessageParam(
-                content="\n".join(
-                    [
-                        f"MCP Server Message: {parameters.message}",
-                        f"MCP Server Requested Schema: {parameters.requestedSchema}",
-                    ]
-                ),
+                content=elicitation_events["server_message"], role="developer"
+            ),
+            ChatCompletionDeveloperMessageParam(
+                content=f"MCP Server Requested Schema: {elicitation_events['requested_schema']}",
                 role="developer",
             ),
             ChatCompletionAssistantMessageParam(
