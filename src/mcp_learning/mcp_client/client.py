@@ -20,6 +20,8 @@ from mcp.types import (
     ElicitRequestParams,
     ErrorData,
     LoggingMessageNotificationParams,
+    SamplingCapability,
+    SamplingToolsCapability,
     TextContent,
     ToolAnnotations,
 )
@@ -1121,6 +1123,9 @@ class MCPClient:
             if self.settings.sampling
             else None
         )
+        sampling_capabilities_declaration = (
+            SamplingCapability(tools=SamplingToolsCapability()) if self.settings.sampling else None
+        )
         elicitation_handler = (
             functools.partial(self.elicitation_handler, tool_call_id)
             if self.settings.elicitation
@@ -1145,6 +1150,7 @@ class MCPClient:
             async with Client(
                 transport,
                 sampling_handler=sampling_handler,
+                sampling_capabilities=sampling_capabilities_declaration,
                 elicitation_handler=elicitation_handler,
                 log_handler=logging_handler,
             ) as client:
