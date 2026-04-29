@@ -121,6 +121,25 @@ class MCPTool(pydantic.BaseModel):
     annotations: ToolAnnotations | None = None
     server_name: str
 
+    @pydantic.model_validator(mode="after")
+    def validate_configurations(self: typing.Self) -> typing.Self:
+        """Validate that the provided tool name is valid.
+
+        Raises
+        ------
+        ValueError
+            if the provided tool name is invalid
+
+        Returns
+        -------
+        MCPTool
+            validated configurations
+        """
+        if "--" in self.name:
+            raise ValueError("'--' is restricted in name of MCP tools.")
+
+        return self
+
 
 class Status(enum.StrEnum):
     """Define the status of an MCP server operation."""
@@ -514,7 +533,7 @@ class MCPClient:
         return [
             ChatCompletionToolParam(
                 function=FunctionDefinition(
-                    name=f"mcp-{server_name}-{tool.name}",
+                    name=f"mcp--{server_name}--{tool.name}",
                     description=tool.description or "",
                     parameters=tool.input_schema,
                 ),
@@ -583,26 +602,18 @@ class MCPClient:
         available_openai_tools = await self.get_all_openai_functions()
 
         match parameters.includeContext:
-            case "none":
+            case None | "none":
                 filtered_openai_tools = []
             case "thisServer":
+                this_server = self.tool_call_events[tool_call_id]["server_name"]
+
                 filtered_openai_tools = [
                     tool
                     for tool in available_openai_tools
-                    if tool["function"]["name"].endswith(
-                        self.tool_call_events[tool_call_id]["tool_name"]
-                    )
+                    if tool["function"]["name"].startswith(f"mcp--{this_server}--")
                 ]
             case "allServers":
                 filtered_openai_tools = available_openai_tools
-            case None:
-                filtered_openai_tools = [
-                    tool
-                    for tool in available_openai_tools
-                    if not tool["function"]["name"].endswith(
-                        self.tool_call_events[tool_call_id]["tool_name"]
-                    )
-                ]
 
         with self.langfuse_client.start_as_current_observation(
             name=f"sampling for tool call {tool_call_id}",
@@ -1001,8 +1012,6 @@ class MCPClient:
                 "mcp.remote.log.level": parameters.level,
                 "mcp.remote.log.logger": parameters.logger,
                 "mcp.remote.log.data": parameters.data,
-                "mcp.remote.log.data.msg": parameters.data.get("msg"),
-                "mcp.remote.log.data.extra": parameters.data.get("extra"),
             },
         )
 
@@ -1063,7 +1072,7 @@ class MCPClient:
         tool_call_id : str
             unique identifier for the tool call
         tool_name : str
-            name of the tool to call, formatted as "mcp-{server_name}-{tool_name}"
+            name of the tool to call, formatted as "mcp--{server_name}--{tool_name}"
         arguments : dict
             arguments to pass to the tool call
 
@@ -1084,7 +1093,7 @@ class MCPClient:
             },
         )
 
-        if not tool_name.startswith("mcp-"):
+        if not tool_name.startswith("mcp--"):
             LOGGER.warning(
                 f"Unknown MCP tool {tool_name=}.",
                 extra={
@@ -1099,7 +1108,7 @@ class MCPClient:
 
             return json.dumps({"error": f"Unknown MCP tool {tool_name}."})
 
-        _, server_name, actual_tool_name = tool_name.split(sep="-", maxsplit=2)
+        _, server_name, actual_tool_name = tool_name.split(sep="--", maxsplit=2)
 
         if server_name not in self.mcp_servers:
             LOGGER.warning(
