@@ -692,7 +692,7 @@ class MCPClient:
             stopReason=choice.finish_reason,
         )
 
-    async def elicitation_handler(  # noqa: PLR0911
+    async def elicitation_handler(  # noqa: PLR0911, PLR0915
         self: typing.Self,
         tool_call_id: str,
         message: str,
@@ -723,6 +723,10 @@ class MCPClient:
         # TODO (@yarnabrina): find out how to use context
         # https://github.com/yarnabrina/learn-model-context-protocol/issues/4
         del context
+
+        # TODO (@yarnabrina): find out how to use response_type
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/36
+        del response_type
 
         elicitation_events = {
             "server_message": message,
@@ -927,28 +931,43 @@ class MCPClient:
         self.tool_call_events[tool_call_id]["elicitation_events"] = elicitation_events
 
         if (
-            response_type is None
-            or not isinstance(elicitation_response_message, dict)
-            or not {"action", "content"}.issubset(elicitation_response_message.keys())
+            not isinstance(elicitation_response_message, dict)
+            or "action" not in elicitation_response_message
         ):
-            LOGGER.warning("Elicitation response is unexpected, returning without parsing.")
+            LOGGER.error("Elicitation response is not in correct format.")
 
-            return elicitation_response_message
+            return ErrorData(
+                code=INTERNAL_ERROR,
+                message=(
+                    f"Unacceptable elicitation response format: {elicitation_response_message=}."
+                ),
+            )
 
         match action := elicitation_response_message["action"]:
             case "cancel" | "decline":
+                LOGGER.warning(f"Elicitation is refused by user: {action=}.")
+
                 return ElicitResult(action=action)
             case "accept":
+                if "content" not in elicitation_response_message:
+                    LOGGER.error("Elicitation response lacks needed information.")
+
+                    return ErrorData(
+                        code=INTERNAL_ERROR,
+                        message=(
+                            f"Elicitation response is incomplete: {elicitation_response_message=}."
+                        ),
+                    )
+
                 return ElicitResult(
-                    action="accept",
-                    content=response_type(value=elicitation_response_message["content"]),
+                    action="accept", content=elicitation_response_message["content"]
                 )
             case _:
-                LOGGER.error("Elicitation response is unacceptable.")
+                LOGGER.error("Unexpected elicitation action.")
 
                 return ErrorData(
                     code=INTERNAL_ERROR,
-                    message=f"Unacceptable elicitation response: {elicitation_response_message=}.",
+                    message=f"Unexpected elicitation action: {elicitation_response_message=}.",
                 )
 
     @staticmethod
