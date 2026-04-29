@@ -11,13 +11,13 @@ import typing
 import pydantic
 from fastmcp import Client
 from fastmcp.client import StreamableHttpTransport
+from fastmcp.client.elicitation import ElicitResult
 from mcp.shared.context import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
     CreateMessageRequestParams,
     CreateMessageResult,
     ElicitRequestParams,
-    ElicitResult,
     ErrorData,
     LoggingMessageNotificationParams,
     TextContent,
@@ -25,6 +25,7 @@ from mcp.types import (
 )
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
+    ChatCompletionDeveloperMessageParam,
     ChatCompletionSystemMessageParam,
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
@@ -687,11 +688,13 @@ class MCPClient:
             stopReason=choice.finish_reason,
         )
 
-    async def elicitation_handler(
+    async def elicitation_handler(  # noqa: PLR0911
         self: typing.Self,
         tool_call_id: str,
-        context: RequestContext,
+        message: str,
+        response_type: type | None,
         parameters: ElicitRequestParams,
+        context: RequestContext,
     ) -> ElicitResult | ErrorData:
         """Handle elicitation requests for MCP tools.
 
@@ -699,10 +702,14 @@ class MCPClient:
         ----------
         tool_call_id : str
             unique identifier for the tool call
-        context : RequestContext
-            request context containing information about the elicitation request
+        message : str
+            prompt to display to user
+        response_type: type | None
+            kind of response
         parameters : ElicitRequestParams
             parameters for the elicitation request, including message and requested schema
+        context : RequestContext
+            request context containing information about the elicitation request
 
         Returns
         -------
@@ -714,20 +721,22 @@ class MCPClient:
         del context
 
         elicitation_events = {
+            "server_instruction": message,
             "server_message": parameters.message,
             "requested_schema": parameters.requestedSchema,
         }
 
         elicitation_request_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_REQUEST_PROMPT, role="system"),
-            ChatCompletionAssistantMessageParam(
-                role="assistant",
+            ChatCompletionAssistantMessageParam(role="assistant", content=message),
+            ChatCompletionDeveloperMessageParam(
                 content="\n".join(
                     [
                         f"MCP Server Message: {parameters.message}",
                         f"MCP Server Requested Schema: {parameters.requestedSchema}",
                     ]
                 ),
+                role="developer",
             ),
         ]
 
@@ -817,14 +826,15 @@ class MCPClient:
 
         elicitation_response_messages = [
             ChatCompletionSystemMessageParam(content=ELICITATION_RESPONSE_PROMPT, role="system"),
-            ChatCompletionAssistantMessageParam(
-                role="assistant",
+            ChatCompletionAssistantMessageParam(role="assistant", content=message),
+            ChatCompletionDeveloperMessageParam(
                 content="\n".join(
                     [
                         f"MCP Server Message: {parameters.message}",
                         f"MCP Server Requested Schema: {parameters.requestedSchema}",
                     ]
                 ),
+                role="developer",
             ),
             ChatCompletionAssistantMessageParam(
                 role="assistant", content=elicitation_request_message
@@ -924,7 +934,30 @@ class MCPClient:
 
         self.tool_call_events[tool_call_id]["elicitation_events"] = elicitation_events
 
-        return elicitation_response_message
+        if (
+            response_type is None
+            or not isinstance(elicitation_response_message, dict)
+            or not {"action", "content"}.issubset(elicitation_response_message.keys())
+        ):
+            LOGGER.warning("Elicitation response is unexpected, returning without parsing.")
+
+            return elicitation_response_message
+
+        match (action := elicitation_response_message["action"]):
+            case "cancel" | "decline":
+                return ElicitResult(action=action)
+            case "accept":
+                return ElicitResult(
+                    action="accept",
+                    content=response_type(value=elicitation_response_message["content"]),
+                )
+            case _:
+                LOGGER.error("Elicitation response is unacceptable.")
+
+                return ErrorData(
+                    code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message=f"Unacceptable elicitation response: {elicitation_response_message=}.",
+                )
 
     @staticmethod
     async def logging_handler(
