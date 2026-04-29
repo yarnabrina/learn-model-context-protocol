@@ -954,7 +954,7 @@ class MCPClient:
 
     @staticmethod
     async def progress_handler(
-        tool_call_id: str, progress: float, total: float | None = None, message: str | None = None
+        tool_call_id: str, progress: float, total: float | None, message: str | None
     ) -> None:
         """Report progress for MCP tools.
 
@@ -964,14 +964,19 @@ class MCPClient:
             unique identifier for the tool call
         progress : float
             current progress value
-        total : float | None, optional
-            total progress value, by default None
-        message : str | None, optional
-            optional message to accompany the progress report, by default None
+        total : float | None
+            total progress value
+        message : str | None
+            optional message to accompany the progress report
         """
         completion = f"{progress}"
+
         if total is not None:
             completion += f"/{total}"
+
+            if total != 0:
+                percentage = 100 * (progress / total)
+                completion += f" ({percentage:.2f}%)"
 
         progress_message = f"Progress of {tool_call_id}: {completion}."
 
