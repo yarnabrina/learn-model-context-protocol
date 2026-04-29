@@ -939,9 +939,15 @@ class MCPClient:
         parameters : LoggingMessageNotificationParams
             parameters for the logging request, including log level and message data
         """
+        log_level = MCP_LOG_LEVELS[parameters.level]
+
+        log_message = str(parameters.data)
+        if (logger := parameters.logger) is not None:
+            log_message += f" ({logger})"
+
         LOGGER.log(
-            MCP_LOG_LEVELS[parameters.level],
-            parameters.data,
+            log_level,
+            log_message,
             extra={
                 "event.group": "mcp",
                 "event.type": "remote_log",
@@ -949,6 +955,10 @@ class MCPClient:
                 "event.status": "succeeded",
                 "tool.call.id": tool_call_id,
                 "mcp.remote.log.level": parameters.level,
+                "mcp.remote.log.logger": parameters.logger,
+                "mcp.remote.log.data": parameters.data,
+                "mcp.remote.log.data.msg": parameters.data.get("msg"),
+                "mcp.remote.log.data.extra": parameters.data.get("extra"),
             },
         )
 
