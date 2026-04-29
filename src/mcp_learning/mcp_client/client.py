@@ -21,6 +21,7 @@ from mcp.types import (
     ErrorData,
     LoggingMessageNotificationParams,
     SamplingCapability,
+    SamplingMessage,
     SamplingToolsCapability,
     TextContent,
     ToolAnnotations,
@@ -526,8 +527,9 @@ class MCPClient:
     async def sampling_handler(
         self: typing.Self,
         tool_call_id: str,
-        context: RequestContext,
+        messages: list[SamplingMessage],
         parameters: CreateMessageRequestParams,
+        context: RequestContext,
     ) -> CreateMessageResult | ErrorData:
         """Handle sampling requests for OpenAI API calls with MCP tools.
 
@@ -535,10 +537,12 @@ class MCPClient:
         ----------
         tool_call_id : str
             unique identifier for the tool call
-        context : RequestContext
-            request context containing information about the sampling request
+        messages : list[SamplingMessage]
+            conversations to pass to LLM
         parameters : CreateMessageRequestParams
             parameters for the sampling request, including messages and customisations
+        context : RequestContext
+            request context containing information about the sampling request
 
         Returns
         -------
@@ -556,7 +560,7 @@ class MCPClient:
                     if isinstance(message.content, TextContent)
                     else str(message.content)
                 )
-                for message in parameters.messages
+                for message in messages
             ]
         }
 
@@ -571,8 +575,8 @@ class MCPClient:
         if (stop_sequences := parameters.stopSequences) is not None:
             openai_customisations["stop"] = stop_sequences
 
-        messages = [
-            ChatCompletionUserMessageParam(content=message, role="user")
+        conversation = [
+            ChatCompletionDeveloperMessageParam(content=message, role="developer")
             for message in sampling_events["server_messages"]
         ]
 
@@ -603,7 +607,7 @@ class MCPClient:
         with self.langfuse_client.start_as_current_observation(
             name=f"sampling for tool call {tool_call_id}",
             as_type="span",
-            input=messages,
+            input=conversation,
             end_on_exit=True,
         ) as sampling_monitoring:
             LOGGER.debug(
@@ -620,7 +624,7 @@ class MCPClient:
             try:
                 non_streaming_openai_response = (
                     await self.openai_client.get_non_streaming_openai_response(
-                        messages,
+                        conversation,
                         system_prompt=parameters.systemPrompt,
                         tools=filtered_openai_tools,
                         openai_customisations=openai_customisations,
