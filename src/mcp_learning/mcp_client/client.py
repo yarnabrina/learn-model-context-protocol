@@ -708,7 +708,7 @@ class MCPClient:
             unique identifier for the tool call
         message : str
             prompt to display to user
-        response_type: type | None
+        response_type : type | None
             kind of response
         parameters : ElicitRequestParams
             parameters for the elicitation request, including message and requested schema
@@ -935,7 +935,7 @@ class MCPClient:
 
             return elicitation_response_message
 
-        match (action := elicitation_response_message["action"]):
+        match action := elicitation_response_message["action"]:
             case "cancel" | "decline":
                 return ElicitResult(action=action)
             case "accept":
