@@ -1,5 +1,6 @@
 """Implement client-side logic for MCP server management."""
 
+import dataclasses
 import enum
 import functools
 import http
@@ -7,10 +8,9 @@ import json
 import logging
 import typing
 
-import httpx
 import pydantic
-from mcp import ClientSession
-from mcp.client.streamable_http import streamable_http_client
+from fastmcp import Client
+from fastmcp.client import StreamableHttpTransport
 from mcp.shared.context import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
@@ -205,16 +205,13 @@ class MCPClient:
             name=server_name, connection_url=server_url, connection_headers=server_headers
         )
 
-        http_client = httpx.AsyncClient(headers=server.connection_headers)
+        transport = StreamableHttpTransport(
+            server.connection_url, headers=server.connection_headers
+        )
 
         try:
-            async with streamable_http_client(  # noqa: SIM117
-                server.connection_url, http_client=http_client
-            ) as (read_stream, write_stream, _):
-                async with ClientSession(read_stream, write_stream) as session:
-                    await session.initialize()
-
-                    server_tools = await session.list_tools()
+            async with Client(transport, auto_initialize=True) as client:
+                server_tools = await client.list_tools()
         except ExceptionGroup:
             LOGGER.exception(
                 f"Failed to add MCP server {server_name=} at {server_url=}.",
@@ -257,7 +254,7 @@ class MCPClient:
                 annotations=tool.annotations,
                 server_name=server.name,
             )
-            for tool in server_tools.tools
+            for tool in server_tools
         ]
         self.mcp_server_tools[server_name] = processed_server_tools
 
@@ -1099,24 +1096,20 @@ class MCPClient:
             else None
         )
 
-        http_client = httpx.AsyncClient(headers=server.connection_headers)
+        transport = StreamableHttpTransport(
+            server.connection_url, headers=server.connection_headers
+        )
 
         try:
-            async with streamable_http_client(  # noqa: SIM117
-                server.connection_url, http_client=http_client
-            ) as (read_stream, write_stream, _):
-                async with ClientSession(
-                    read_stream,
-                    write_stream,
-                    sampling_callback=sampling_handler,
-                    elicitation_callback=elicitation_handler,
-                    logging_callback=logging_handler,
-                ) as session:
-                    await session.initialize()
-
-                    tool_result = await session.call_tool(
-                        actual_tool_name, arguments=arguments, progress_callback=progress_handler
-                    )
+            async with Client(
+                transport,
+                sampling_handler=sampling_handler,
+                elicitation_handler=elicitation_handler,
+                log_handler=logging_handler,
+            ) as client:
+                tool_result = await client.call_tool(
+                    actual_tool_name, arguments=arguments, progress_handler=progress_handler
+                )
         except ExceptionGroup:
             LOGGER.warning(
                 f"Failed tool call to {actual_tool_name=} of MCP server {server_name=}.",
@@ -1170,9 +1163,9 @@ class MCPClient:
         )
 
         if self.settings.trace:
-            trace_tool_output(actual_tool_name, tool_result.model_dump())
+            trace_tool_output(actual_tool_name, dataclasses.asdict(tool_result))
 
-        if tool_result.isError:
+        if tool_result.is_error:
             error_message = "".join(
                 content.text for content in tool_result.content if isinstance(content, TextContent)
             )
@@ -1195,7 +1188,7 @@ class MCPClient:
                 {"error": f"Tool call {tool_name} failed with {arguments}: {error_message}."}
             )
 
-        if (structured_result := tool_result.structuredContent) is not None:
+        if (structured_result := tool_result.structured_content) is not None:
             return json.dumps(structured_result)
 
         return json.dumps([element.model_dump() for element in tool_result.content])
