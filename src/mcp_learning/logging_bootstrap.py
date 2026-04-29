@@ -390,12 +390,6 @@ def resolve_effective_levels(
     file_level = policy.file_level
 
     if settings.debug:
-        if settings.log_level is not None and settings.log_level != LogLevel.DEBUG:
-            handle_policy_conflict(
-                settings,
-                f"Debug mode ignores conflicting log_level and enforces {LogLevel.DEBUG}.",
-            )
-
         return stream_level, file_level
 
     if settings.log_level is None:

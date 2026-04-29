@@ -22,7 +22,6 @@ from mcp.types import (
     LoggingMessageNotificationParams,
     SamplingCapability,
     SamplingMessage,
-    SamplingToolsCapability,
     TextContent,
     ToolAnnotations,
 )
@@ -264,21 +263,37 @@ class MCPClient:
 
             return Status.FAILURE, []
 
+        try:
+            processed_server_tools = [
+                MCPTool(
+                    name=tool.name,
+                    display_name=get_display_name(tool),
+                    title=tool.title,
+                    description=tool.description,
+                    input_schema=tool.inputSchema,
+                    output_schema=tool.outputSchema,
+                    annotations=tool.annotations,
+                    server_name=server.name,
+                )
+                for tool in server_tools
+            ]
+        except Exception:  # pylint: disable=broad-exception-caught
+            LOGGER.exception(
+                f"Failed to validate tools in MCP server {server_name=} at {server_url=}.",
+                extra={
+                    "event.group": "mcp",
+                    "event.type": "server_registry",
+                    "event.action": "add",
+                    "event.status": "failed",
+                    "mcp.server.name": server_name,
+                    "mcp.server.url": server_url,
+                },
+            )
+
+            return Status.FAILURE, []
+
         self.mcp_servers[server.name] = server
 
-        processed_server_tools = [
-            MCPTool(
-                name=tool.name,
-                display_name=get_display_name(tool),
-                title=tool.title,
-                description=tool.description,
-                input_schema=tool.inputSchema,
-                output_schema=tool.outputSchema,
-                annotations=tool.annotations,
-                server_name=server.name,
-            )
-            for tool in server_tools
-        ]
         self.mcp_server_tools[server_name] = processed_server_tools
 
         LOGGER.info(
@@ -599,21 +614,8 @@ class MCPClient:
             for message in sampling_events["server_messages"]
         ]
 
-        available_openai_tools = await self.get_all_openai_functions()
-
-        match parameters.includeContext:
-            case None | "none":
-                filtered_openai_tools = []
-            case "thisServer":
-                this_server = self.tool_call_events[tool_call_id]["server_name"]
-
-                filtered_openai_tools = [
-                    tool
-                    for tool in available_openai_tools
-                    if tool["function"]["name"].startswith(f"mcp--{this_server}--")
-                ]
-            case "allServers":
-                filtered_openai_tools = available_openai_tools
+        # TODO (@yarnabrina): enable tools for sampling
+        # https://github.com/yarnabrina/learn-model-context-protocol/issues/37
 
         with self.langfuse_client.start_as_current_observation(
             name=f"sampling for tool call {tool_call_id}",
@@ -637,7 +639,6 @@ class MCPClient:
                     await self.openai_client.get_non_streaming_openai_response(
                         conversation,
                         system_prompt=parameters.systemPrompt,
-                        tools=filtered_openai_tools,
                         openai_customisations=openai_customisations,
                     )
                 )
@@ -1149,7 +1150,7 @@ class MCPClient:
             else None
         )
         sampling_capabilities_declaration = (
-            SamplingCapability(tools=SamplingToolsCapability()) if self.settings.sampling else None
+            SamplingCapability() if self.settings.sampling else None
         )
         elicitation_handler = (
             functools.partial(self.elicitation_handler, tool_call_id)
