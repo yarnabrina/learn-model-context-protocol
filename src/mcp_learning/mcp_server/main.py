@@ -166,7 +166,10 @@ class ArithmeticMCPServer:
                 " and parse/evaluate arithmetic expressions."
             ),
             version="0.2.0",
-            website_url="https://registry.modelcontextprotocol.io/servers/io.github.yarnabrina/mcp-learning",
+            website_url=(
+                "https://registry.modelcontextprotocol.io/servers/"
+                "io.github.yarnabrina/mcp-learning"
+            ),
             on_duplicate="error",
             mask_error_details=False,
             strict_input_validation=True,
