@@ -124,7 +124,7 @@
             "runtimeHint": "uvx",
             "transport": {
                 "type": "streamable-http",
-                "url": "http://{--host}:{--port}{--streamable_http_path}"
+                "url": "http://127.0.0.1:8000/mcp"
             },
             "version": "0.3.0"
         }
