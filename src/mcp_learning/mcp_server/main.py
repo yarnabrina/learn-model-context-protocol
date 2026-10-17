@@ -1,15 +1,14 @@
 """Initialise a basic MCP server with arithmetic operations."""
 
 import asyncio
-import collections.abc
-import functools
 import logging
 import typing
 
 from fastmcp import FastMCP
-from fastmcp.tools import Tool
+from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
+from fastmcp.tools import Tool, ToolResult
 from fastmcp.utilities.logging import get_logger
-from mcp.types import ToolAnnotations
+from mcp.types import CallToolRequestParams, ToolAnnotations
 
 from ..logging_bootstrap import (
     LoggingBootstrapSettings,
@@ -32,45 +31,42 @@ from .simplification import evaluate_arithmetic_expression, parse_arithmetic_exp
 LOGGER = logging.getLogger(__name__)
 
 CLIENT_LOGGER = get_logger("fastmcp.server.context.to_client")
+
 CLIENT_LOGGER.setLevel(logging.DEBUG)
 
 
-def create_logged_tool(
-    tool_callable: collections.abc.Callable, tool_name: str
-) -> collections.abc.Callable:
-    """Wrap a callable tool to log its input and output.
+class ToolLoggingMiddleware(Middleware):
+    """Log tool calls through the project's structured logger."""
 
-    Parameters
-    ----------
-    tool_callable : collections.abc.Callable
-        the original tool function to be wrapped
-    tool_name : str
-        name of the tool for logging purposes
-
-    Returns
-    -------
-    collections.abc.Callable
-        wrapped tool function with logging functionality
-    """
-
-    @functools.wraps(tool_callable)
-    async def logged_tool(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:  # noqa: ANN401
-        """Log the input arguments and output result of the tool function.
+    async def on_call_tool(
+        self: typing.Self,
+        context: MiddlewareContext[CallToolRequestParams],
+        call_next: CallNext[CallToolRequestParams, ToolResult],
+    ) -> ToolResult:
+        """Log a tool call before and after dispatch.
 
         Parameters
         ----------
-        *args : tuple
-            positional arguments passed to the tool function
-        **kwargs : dict
-            keyword arguments passed to the tool function
+        context : MiddlewareContext[CallToolRequestParams]
+            tool name and arguments for the incoming request
+        call_next : CallNext[CallToolRequestParams, ToolResult]
+            next middleware or tool handler in the dispatch chain
 
         Returns
         -------
-        typing.Any
-            result returned by the original tool function
+        ToolResult
+            tool result, including an error result returned by the tool
+
+        Raises
+        ------
+        Exception
+            re-raises an exception from downstream middleware or the tool
         """
+        tool_name = context.message.name
+        arguments = context.message.arguments
+
         LOGGER.info(
-            f"Received tool call for {tool_name=} with {args=} and {kwargs=}.",
+            f"Received tool call for {tool_name=} with {arguments=}.",
             extra={
                 "event.group": "tool",
                 "event.type": "local_call",
@@ -81,24 +77,7 @@ def create_logged_tool(
         )
 
         try:
-            if asyncio.iscoroutinefunction(tool_callable):
-                result = await tool_callable(*args, **kwargs)
-            else:
-                result = tool_callable(*args, **kwargs)
-        except ExceptionGroup:
-            LOGGER.exception(
-                f"Tool call for {tool_name=} failed.",
-                exc_info=True,
-                extra={
-                    "event.group": "tool",
-                    "event.type": "local_call",
-                    "event.action": "execute",
-                    "event.status": "failed",
-                    "tool.name": tool_name,
-                },
-            )
-
-            raise
+            result = await call_next(context)
         except Exception:
             LOGGER.exception(
                 f"Tool call for {tool_name=} failed.",
@@ -114,20 +93,20 @@ def create_logged_tool(
 
             raise
 
-        LOGGER.info(
-            f"Tool call for {tool_name=} succeeded with {result=}.",
+        log_method = LOGGER.error if result.is_error else LOGGER.info
+        log_method(
+            f"Tool call for {tool_name=} {'failed' if result.is_error else 'succeeded'} "
+            f"with {result=}.",
             extra={
                 "event.group": "tool",
                 "event.type": "local_call",
                 "event.action": "execute",
-                "event.status": "succeeded",
+                "event.status": "failed" if result.is_error else "succeeded",
                 "tool.name": tool_name,
             },
         )
 
         return result
-
-    return logged_tool
 
 
 class ArithmeticMCPServer:
@@ -170,6 +149,7 @@ class ArithmeticMCPServer:
                 "https://registry.modelcontextprotocol.io/servers/"
                 "io.github.yarnabrina/mcp-learning"
             ),
+            middleware=[ToolLoggingMiddleware()],
             on_duplicate="error",
             mask_error_details=False,
             strict_input_validation=True,
@@ -179,7 +159,7 @@ class ArithmeticMCPServer:
         """Configure and add arithmetic operation tools to the MCP server."""
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(add_numbers, "addition"),
+                add_numbers,
                 name="addition",
                 title="Add Numbers",
                 description="Perform addition of two real numbers",
@@ -190,7 +170,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(get_negative, "negation"),
+                get_negative,
                 name="negation",
                 title="Get Negative",
                 description="Get additive inverse of a real number",
@@ -201,7 +181,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(subtract_numbers, "subtraction"),
+                subtract_numbers,
                 name="subtraction",
                 title="Subtract Numbers",
                 description="Perform subtraction of two real numbers",
@@ -212,7 +192,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(multiply_numbers, "multiplication"),
+                multiply_numbers,
                 name="multiplication",
                 title="Multiply Numbers",
                 description="Perform multiplication of two real numbers",
@@ -223,7 +203,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(get_reciprocal, "reciprocal"),
+                get_reciprocal,
                 name="reciprocal",
                 title="Get Reciprocal",
                 description="Get multiplicative inverse of a real number",
@@ -234,7 +214,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(divide_numbers, "division"),
+                divide_numbers,
                 name="division",
                 title="Divide Numbers",
                 description="Perform division of two real numbers",
@@ -245,7 +225,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(parse_arithmetic_expression, "parse_expression"),
+                parse_arithmetic_expression,
                 name="parse_expression",
                 title="Parse Arithmetic Expression",
                 description="Parse a text into a valid arithmetic expression",
@@ -256,7 +236,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(evaluate_arithmetic_expression, "evaluate_expression"),
+                evaluate_arithmetic_expression,
                 name="evaluate_expression",
                 title="Evaluate Arithmetic Expression",
                 description="Evaluate a valid postfix arithmetic expression",
@@ -269,7 +249,7 @@ class ArithmeticMCPServer:
         )
         self.mcp_server.add_tool(
             Tool.from_function(
-                create_logged_tool(exponentiate, "exponentiation"),
+                exponentiate,
                 name="exponentiation",
                 title="Power",
                 description="Raise a base to an exponent",
@@ -284,15 +264,15 @@ def main() -> None:
     """Define entry point for the MCP server."""
     settings = Configurations()
 
-    initiate_logging(
-        LoggingBootstrapSettings(
-            component=LoggingComponent.MCP_SERVER,
-            debug=settings.debug,
-            log_level=settings.log_level,
-            runtime_environment=settings.runtime_environment,
-            log_file=settings.log_file,
-        )
+    logging_settings = LoggingBootstrapSettings(
+        component=LoggingComponent.MCP_SERVER,
+        debug=settings.debug,
+        log_level=settings.log_level,
+        runtime_environment=settings.runtime_environment,
+        log_file=settings.log_file,
     )
+
+    initiate_logging(logging_settings)
 
     LOGGER.info(
         "MCP server startup began.",
@@ -321,24 +301,16 @@ def main() -> None:
         raise
 
     LOGGER.info(
-        "MCP server startup completed.",
+        "MCP server configuration completed.",
         extra={
             "event.group": "runtime",
-            "event.type": "lifecycle",
-            "event.action": "start",
+            "event.type": "configuration",
+            "event.action": "configure",
             "event.status": "succeeded",
         },
     )
 
-    effective_log_level = resolve_fastmcp_log_level(
-        LoggingBootstrapSettings(
-            component=LoggingComponent.MCP_SERVER,
-            runtime_environment=settings.runtime_environment,
-            debug=settings.debug,
-            log_level=settings.log_level,
-            log_file=settings.log_file,
-        )
-    )
+    effective_log_level = resolve_fastmcp_log_level(logging_settings)
 
     asyncio.run(
         arithmetic_mcp_server.mcp_server.run_http_async(

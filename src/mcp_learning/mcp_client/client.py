@@ -1,6 +1,5 @@
 """Implement client-side logic for MCP server management."""
 
-import dataclasses
 import enum
 import functools
 import json
@@ -232,7 +231,7 @@ class MCPClient:
         )
 
         try:
-            async with Client(transport, auto_initialize=True) as client:
+            async with Client(transport, auto_initialize=True, mode="auto") as client:
                 server_tools = await client.list_tools()
         except ExceptionGroup:
             LOGGER.exception(
@@ -1179,12 +1178,11 @@ class MCPClient:
                 sampling_capabilities=sampling_capabilities_declaration,
                 elicitation_handler=elicitation_handler,
                 log_handler=logging_handler,
+                auto_initialize=True,
+                mode="legacy" if self.settings.sampling else "auto",
             ) as client:
-                tool_result = await client.call_tool(
-                    actual_tool_name,
-                    arguments=arguments,
-                    progress_handler=progress_handler,
-                    raise_on_error=False,
+                tool_result = await client.call_tool_mcp(
+                    actual_tool_name, arguments=arguments, progress_handler=progress_handler
                 )
         except ExceptionGroup:
             LOGGER.warning(
@@ -1239,7 +1237,7 @@ class MCPClient:
         )
 
         if self.settings.trace:
-            trace_tool_output(actual_tool_name, dataclasses.asdict(tool_result))
+            trace_tool_output(actual_tool_name, tool_result.model_dump())
 
         if tool_result.is_error:
             error_message = "".join(
