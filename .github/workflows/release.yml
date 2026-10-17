@@ -15,13 +15,13 @@ jobs:
     environment: pypi-release
     steps:
       - name: checkout commit step
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - name: set up uv step
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10
       - name: install python step
-        run: uv python install 3.13
+        run: uv python install 3.14
       - name: build wheel step
         run: uv build
       - name: publish wheel step

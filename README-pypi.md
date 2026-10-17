@@ -22,7 +22,7 @@ Please see [CONTRIBUTING.md](https://github.com/yarnabrina/learn-model-context-p
 
 This project is licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
 
-Copyright (C) 2025 Anirban Ray
+Copyright (C) 2025-2026 Anirban Ray
 
 See the [LICENSE](https://github.com/yarnabrina/learn-model-context-protocol/blob/main/LICENSE) file for details.
 

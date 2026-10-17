@@ -1,44 +1,29 @@
 {
-    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
-    "_meta": {
-        "io.modelcontextprotocol.registry/publisher-provided": {
-            "cliOptions": [
-                {
-                    "default": false,
-                    "description": "Enable additional debug logging output.",
-                    "flag": "--debug"
-                },
-                {
-                    "default": false,
-                    "description": "Return JSON payloads for HTTP responses instead of newline-delimited JSON.",
-                    "flag": "--json_response"
-                },
-                {
-                    "default": false,
-                    "description": "Disable HTTP keep-alive to serve each request independently.",
-                    "flag": "--stateless_http"
-                }
-            ]
-        }
-    },
-    "description": "MCP server that can perform basic arithmetic operations and parse/evaluate arithmetic expressions.",
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "description": "Basic arithmetic tools with natural-language expression parsing and evaluation.",
     "name": "io.github.yarnabrina/mcp-learning",
     "packages": [
         {
-            "identifier": "mcp-learning",
-            "registryBaseUrl": "https://pypi.org",
-            "registryType": "pypi",
-            "runtimeArguments": [
+            "environmentVariables": [
                 {
-                    "description": "Resolve console scripts from the published package.",
-                    "name": "--from",
-                    "type": "named",
-                    "value": "mcp-learning"
+                    "default": "false",
+                    "description": "Enable additional debug logging output.",
+                    "format": "boolean",
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "DEBUG"
                 },
                 {
-                    "description": "Invoke the entry point that starts the MCP server.",
-                    "type": "positional",
-                    "value": "mcp-server"
+                    "choices": [
+                        "local",
+                        "production"
+                    ],
+                    "default": "local",
+                    "description": "Logging/runtime environment.",
+                    "format": "string",
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "RUNTIME_ENVIRONMENT"
                 },
                 {
                     "choices": [
@@ -48,33 +33,108 @@
                         "ERROR",
                         "CRITICAL"
                     ],
-                    "default": "WARNING",
-                    "description": "Log level for server output.",
-                    "name": "--log_level",
+                    "default": "INFO",
+                    "description": "Log level for server output; the server defaults to INFO.",
+                    "format": "string",
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "LOG_LEVEL"
+                },
+                {
+                    "description": "Optional path for a server log file.",
+                    "format": "filepath",
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "LOG_FILE"
+                },
+                {
+                    "default": "false",
+                    "description": "Return JSON payloads for HTTP responses instead of newline-delimited JSON.",
+                    "format": "boolean",
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "JSON_RESPONSE"
+                },
+                {
+                    "default": "false",
+                    "description": "Disable HTTP keep-alive to serve each request independently.",
+                    "format": "boolean",
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "STATELESS_HTTP"
+                }
+            ],
+            "identifier": "mcp-learning",
+            "packageArguments": [
+                {
+                    "default": "127.0.0.1",
+                    "description": "Local bind address for the Streamable HTTP server.",
+                    "format": "string",
+                    "isRepeated": false,
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "--host",
+                    "type": "named"
+                },
+                {
+                    "default": "8000",
+                    "description": "Local port for the Streamable HTTP server.",
+                    "format": "number",
+                    "isRepeated": false,
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "--port",
+                    "type": "named"
+                },
+                {
+                    "default": "/mcp",
+                    "description": "Endpoint path for the Streamable HTTP server.",
+                    "format": "string",
+                    "isRepeated": false,
+                    "isRequired": false,
+                    "isSecret": false,
+                    "name": "--streamable_http_path",
+                    "type": "named"
+                }
+            ],
+            "registryBaseUrl": "https://pypi.org",
+            "registryType": "pypi",
+            "runtimeArguments": [
+                {
+                    "description": "Resolve console scripts from the published PyPI package.",
+                    "format": "string",
+                    "isRepeated": false,
+                    "isRequired": true,
+                    "isSecret": false,
+                    "name": "--from",
                     "type": "named",
-                    "value": "{log_level}"
+                    "value": "mcp-learning"
+                },
+                {
+                    "description": "Invoke the entry point console script that starts the MCP server.",
+                    "format": "string",
+                    "isRepeated": false,
+                    "isRequired": true,
+                    "isSecret": false,
+                    "type": "positional",
+                    "value": "mcp-server",
+                    "valueHint": "command"
                 }
             ],
             "runtimeHint": "uvx",
             "transport": {
                 "type": "streamable-http",
-                "url": "http://127.0.0.1:8000/mcp"
+                "url": "http://{--host}:{--port}{--streamable_http_path}"
             },
-            "variables": {
-                "log_level": {
-                    "default": "WARNING",
-                    "description": "Log level for the MCP server.",
-                    "format": "string"
-                }
-            },
-            "version": "0.2.0"
+            "version": "0.3.0"
         }
     ],
     "repository": {
+        "id": "1026553889",
         "source": "github",
         "url": "https://github.com/yarnabrina/learn-model-context-protocol"
     },
     "title": "Learning Model Context Protocol",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "websiteUrl": "https://yarnabrina.github.io/learn-model-context-protocol/"
 }

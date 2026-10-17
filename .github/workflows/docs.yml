@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout commit step
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - name: git credentials configuration step
@@ -28,9 +28,9 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
       - name: set up python step
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
-          python-version: ">=3.13 <3.14"
+          python-version: ">=3.14 <3.15"
           check-latest: true
           architecture: x64
           cache: pip

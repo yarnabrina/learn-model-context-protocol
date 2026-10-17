@@ -61,15 +61,15 @@ class HostedOpenAIConfigurations(pydantic_settings.BaseSettings):
     def validate_configurations(self: typing.Self) -> typing.Self:
         """Validate that the provided URL is valid.
 
-        Raises
-        ------
-        ValueError
-            if the provided URL is invalid
-
         Returns
         -------
         HostedOpenAIConfigurations
             validated configurations
+
+        Raises
+        ------
+        ValueError
+            if the provided URL is invalid
         """
         try:
             pydantic.HttpUrl(self.hosted_openai_base_url)
@@ -124,15 +124,15 @@ class LangfuseMonitoringConfigurations(pydantic_settings.BaseSettings):
     def validate_configurations(self: typing.Self) -> typing.Self:
         """Validate that valid Langfuse configurations are provided if monitoring is enabled.
 
-        Raises
-        ------
-        ValueError
-            if monitoring is enabled but configurations are not provided
-
         Returns
         -------
         typing.Self
             validated configurations
+
+        Raises
+        ------
+        ValueError
+            if monitoring is enabled but configurations are not provided
         """
         if not self.langfuse_enabled:
             return self

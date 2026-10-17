@@ -45,7 +45,7 @@ Return only the postfix arithmetic expression without any additional text or exp
 """
     await context.report_progress(1, total=2, message="Started MCP sampling.")
 
-    response = await context.sample(
+    response = await context.session.create_message(
         [SamplingMessage(role="user", content=TextContent(type="text", text=f"Text: {text}"))],
         system_prompt=instruction,
         temperature=0,
@@ -54,14 +54,12 @@ Return only the postfix arithmetic expression without any additional text or exp
 
     await context.report_progress(2, total=2, message="Finished MCP sampling.")
 
-    content = response.text
-
-    if not isinstance(content, str):
+    if not isinstance(content := response.content, TextContent):
         await context.error(f"Expected response content to be text: {content=}.")
 
         raise TypeError(f"Response content is not a text content: {content=}.")
 
-    expression = content.strip()
+    expression = content.text.strip()
 
     await context.info(f"Completed parsing {text=} into {expression=}.")
 

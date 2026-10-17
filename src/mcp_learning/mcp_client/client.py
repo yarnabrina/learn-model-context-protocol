@@ -1,6 +1,5 @@
 """Implement client-side logic for MCP server management."""
 
-import dataclasses
 import enum
 import functools
 import json
@@ -11,7 +10,7 @@ import pydantic
 from fastmcp import Client
 from fastmcp.client import StreamableHttpTransport
 from fastmcp.client.elicitation import ElicitResult
-from mcp.shared.context import RequestContext
+from fastmcp.client.sampling import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
     INTERNAL_ERROR,
@@ -124,15 +123,15 @@ class MCPTool(pydantic.BaseModel):
     def validate_configurations(self: typing.Self) -> typing.Self:
         """Validate that the provided tool name is valid.
 
-        Raises
-        ------
-        ValueError
-            if the provided tool name is invalid
-
         Returns
         -------
         MCPTool
             validated configurations
+
+        Raises
+        ------
+        ValueError
+            if the provided tool name is invalid
         """
         if "--" in self.name:
             raise ValueError("'--' is restricted in name of MCP tools.")
@@ -232,7 +231,7 @@ class MCPClient:
         )
 
         try:
-            async with Client(transport, auto_initialize=True) as client:
+            async with Client(transport, auto_initialize=True, mode="auto") as client:
                 server_tools = await client.list_tools()
         except ExceptionGroup:
             LOGGER.exception(
@@ -270,8 +269,8 @@ class MCPClient:
                     display_name=get_display_name(tool),
                     title=tool.title,
                     description=tool.description,
-                    input_schema=tool.inputSchema,
-                    output_schema=tool.outputSchema,
+                    input_schema=tool.input_schema,
+                    output_schema=tool.output_schema,
                     annotations=tool.annotations,
                     server_name=server.name,
                 )
@@ -598,15 +597,15 @@ class MCPClient:
             ]
         }
 
-        if parameters.systemPrompt:
-            sampling_events["server_instruction"] = parameters.systemPrompt
+        if parameters.system_prompt:
+            sampling_events["server_instruction"] = parameters.system_prompt
 
-        openai_customisations: dict = {"max_completion_tokens": parameters.maxTokens}
+        openai_customisations: dict = {"max_completion_tokens": parameters.max_tokens}
 
         if (temperature := parameters.temperature) is not None:
             openai_customisations["temperature"] = temperature
 
-        if (stop_sequences := parameters.stopSequences) is not None:
+        if (stop_sequences := parameters.stop_sequences) is not None:
             openai_customisations["stop"] = stop_sequences
 
         conversation = [
@@ -638,11 +637,11 @@ class MCPClient:
                 non_streaming_openai_response = (
                     await self.openai_client.get_non_streaming_openai_response(
                         conversation,
-                        system_prompt=parameters.systemPrompt,
+                        system_prompt=parameters.system_prompt,
                         openai_customisations=openai_customisations,
                     )
                 )
-            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            except Exception as error:
                 LOGGER.warning(
                     "Failed to get OpenAI response.",
                     exc_info=True,
@@ -701,7 +700,7 @@ class MCPClient:
             role="assistant",
             content=TextContent(type="text", text=sampling_response_message),
             model=self.settings.language_model,
-            stopReason=choice.finish_reason,
+            stop_reason=choice.finish_reason,
         )
 
     async def elicitation_handler(  # noqa: PLR0911, PLR0915
@@ -742,7 +741,7 @@ class MCPClient:
 
         elicitation_events = {
             "server_message": message,
-            "requested_schema": parameters.requestedSchema,
+            "requested_schema": parameters.requested_schema,
         }
 
         elicitation_request_messages = [
@@ -779,7 +778,7 @@ class MCPClient:
                         elicitation_request_messages
                     )
                 )
-            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            except Exception as error:
                 LOGGER.warning(
                     "Failed to get OpenAI response.",
                     exc_info=True,
@@ -876,7 +875,7 @@ class MCPClient:
                         elicitation_response_messages
                     )
                 )
-            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            except Exception as error:
                 LOGGER.warning(
                     "Failed to get OpenAI response.",
                     exc_info=True,
@@ -1179,8 +1178,10 @@ class MCPClient:
                 sampling_capabilities=sampling_capabilities_declaration,
                 elicitation_handler=elicitation_handler,
                 log_handler=logging_handler,
+                auto_initialize=True,
+                mode="legacy" if self.settings.sampling else "auto",
             ) as client:
-                tool_result = await client.call_tool(
+                tool_result = await client.call_tool_mcp(
                     actual_tool_name, arguments=arguments, progress_handler=progress_handler
                 )
         except ExceptionGroup:
@@ -1200,7 +1201,7 @@ class MCPClient:
             )
 
             return json.dumps({"error": f"Failed tool call to {actual_tool_name}."})
-        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+        except Exception as error:
             LOGGER.warning(
                 f"Failed tool call to {actual_tool_name=} of MCP server {server_name=}.",
                 exc_info=True,
@@ -1236,7 +1237,7 @@ class MCPClient:
         )
 
         if self.settings.trace:
-            trace_tool_output(actual_tool_name, dataclasses.asdict(tool_result))
+            trace_tool_output(actual_tool_name, tool_result.model_dump())
 
         if tool_result.is_error:
             error_message = "".join(

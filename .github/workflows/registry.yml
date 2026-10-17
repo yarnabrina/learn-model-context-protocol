@@ -15,11 +15,15 @@ jobs:
     environment: mcp-registry-release
     steps:
       - name: checkout commit step
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - name: install MCP publisher step
         run: curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: verify PyPI release exists step
+        run: curl --fail --silent --show-error "https://pypi.org/pypi/mcp-learning/$(jq -r '.packages[0].version' server.json)/json" > /dev/null
+      - name: validate server manifest step
+        run: ./mcp-publisher validate
       - name: login to MCP registry step
         run: ./mcp-publisher login github-oidc
       - name: publish to MCP registry step
