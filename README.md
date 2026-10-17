@@ -22,6 +22,6 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development and contribution g
 
 This project is licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
 
-Copyright (C) 2025 Anirban Ray
+Copyright (C) 2025-2026 Anirban Ray
 
 See the [LICENSE](LICENSE) file for details.
