@@ -144,7 +144,7 @@ class ArithmeticMCPServer:
                 "MCP server that can perform basic arithmetic operations"
                 " and parse/evaluate arithmetic expressions."
             ),
-            version="0.2.0",
+            version="0.3.0",
             website_url=(
                 "https://registry.modelcontextprotocol.io/servers/"
                 "io.github.yarnabrina/mcp-learning"
