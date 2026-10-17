@@ -15,7 +15,7 @@ jobs:
     environment: mcp-registry-release
     steps:
       - name: checkout commit step
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - name: install MCP publisher step
