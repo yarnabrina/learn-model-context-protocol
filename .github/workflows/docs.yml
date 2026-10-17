@@ -30,7 +30,7 @@ jobs:
       - name: set up python step
         uses: actions/setup-python@v6
         with:
-          python-version: ">=3.13 <3.14"
+          python-version: ">=3.14 <3.15"
           check-latest: true
           architecture: x64
           cache: pip

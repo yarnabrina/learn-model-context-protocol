@@ -8,7 +8,7 @@ What `uv sync` does is it creates a virtual environment (if not already created)
 
 ```shell
 # Create a virtual environment (if not already created)
-python3.13 -m venv .venv
+python3.14 -m venv .venv
 
 # Activate the virtual environment
 # On Windows

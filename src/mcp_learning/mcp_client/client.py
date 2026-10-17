@@ -124,15 +124,15 @@ class MCPTool(pydantic.BaseModel):
     def validate_configurations(self: typing.Self) -> typing.Self:
         """Validate that the provided tool name is valid.
 
-        Raises
-        ------
-        ValueError
-            if the provided tool name is invalid
-
         Returns
         -------
         MCPTool
             validated configurations
+
+        Raises
+        ------
+        ValueError
+            if the provided tool name is invalid
         """
         if "--" in self.name:
             raise ValueError("'--' is restricted in name of MCP tools.")
@@ -642,7 +642,7 @@ class MCPClient:
                         openai_customisations=openai_customisations,
                     )
                 )
-            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            except Exception as error:
                 LOGGER.warning(
                     "Failed to get OpenAI response.",
                     exc_info=True,
@@ -779,7 +779,7 @@ class MCPClient:
                         elicitation_request_messages
                     )
                 )
-            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            except Exception as error:
                 LOGGER.warning(
                     "Failed to get OpenAI response.",
                     exc_info=True,
@@ -876,7 +876,7 @@ class MCPClient:
                         elicitation_response_messages
                     )
                 )
-            except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+            except Exception as error:
                 LOGGER.warning(
                     "Failed to get OpenAI response.",
                     exc_info=True,
@@ -1200,7 +1200,7 @@ class MCPClient:
             )
 
             return json.dumps({"error": f"Failed tool call to {actual_tool_name}."})
-        except Exception as error:  # noqa: BLE001, pylint: disable=broad-exception-caught
+        except Exception as error:
             LOGGER.warning(
                 f"Failed tool call to {actual_tool_name=} of MCP server {server_name=}.",
                 exc_info=True,
