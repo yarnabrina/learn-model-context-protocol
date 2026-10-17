@@ -11,7 +11,7 @@ import pydantic
 from fastmcp import Client
 from fastmcp.client import StreamableHttpTransport
 from fastmcp.client.elicitation import ElicitResult
-from mcp.shared.context import RequestContext
+from fastmcp.client.sampling import RequestContext
 from mcp.shared.metadata_utils import get_display_name
 from mcp.types import (
     INTERNAL_ERROR,
@@ -270,8 +270,8 @@ class MCPClient:
                     display_name=get_display_name(tool),
                     title=tool.title,
                     description=tool.description,
-                    input_schema=tool.inputSchema,
-                    output_schema=tool.outputSchema,
+                    input_schema=tool.input_schema,
+                    output_schema=tool.output_schema,
                     annotations=tool.annotations,
                     server_name=server.name,
                 )
@@ -598,15 +598,15 @@ class MCPClient:
             ]
         }
 
-        if parameters.systemPrompt:
-            sampling_events["server_instruction"] = parameters.systemPrompt
+        if parameters.system_prompt:
+            sampling_events["server_instruction"] = parameters.system_prompt
 
-        openai_customisations: dict = {"max_completion_tokens": parameters.maxTokens}
+        openai_customisations: dict = {"max_completion_tokens": parameters.max_tokens}
 
         if (temperature := parameters.temperature) is not None:
             openai_customisations["temperature"] = temperature
 
-        if (stop_sequences := parameters.stopSequences) is not None:
+        if (stop_sequences := parameters.stop_sequences) is not None:
             openai_customisations["stop"] = stop_sequences
 
         conversation = [
@@ -638,7 +638,7 @@ class MCPClient:
                 non_streaming_openai_response = (
                     await self.openai_client.get_non_streaming_openai_response(
                         conversation,
-                        system_prompt=parameters.systemPrompt,
+                        system_prompt=parameters.system_prompt,
                         openai_customisations=openai_customisations,
                     )
                 )
@@ -701,7 +701,7 @@ class MCPClient:
             role="assistant",
             content=TextContent(type="text", text=sampling_response_message),
             model=self.settings.language_model,
-            stopReason=choice.finish_reason,
+            stop_reason=choice.finish_reason,
         )
 
     async def elicitation_handler(  # noqa: PLR0911, PLR0915
@@ -742,7 +742,7 @@ class MCPClient:
 
         elicitation_events = {
             "server_message": message,
-            "requested_schema": parameters.requestedSchema,
+            "requested_schema": parameters.requested_schema,
         }
 
         elicitation_request_messages = [
@@ -1181,7 +1181,10 @@ class MCPClient:
                 log_handler=logging_handler,
             ) as client:
                 tool_result = await client.call_tool(
-                    actual_tool_name, arguments=arguments, progress_handler=progress_handler
+                    actual_tool_name,
+                    arguments=arguments,
+                    progress_handler=progress_handler,
+                    raise_on_error=False,
                 )
         except ExceptionGroup:
             LOGGER.warning(
