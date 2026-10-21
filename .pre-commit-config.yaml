@@ -34,34 +34,20 @@ repos:
         args:
           - --keep-runtime-typing
           - --py314-plus
-        stages:
-          - manual
-          - pre-merge-commit
-          - pre-push
   - repo: https://github.com/pycqa/autoflake
     rev: v2.4.0
     hooks:
       - id: autoflake
         args:
           - src
-          # - tests
-          # - noxfile.py
         pass_filenames: false
-        stages:
-          - manual
-          - pre-merge-commit
-          - pre-push
   - repo: https://github.com/pycqa/isort
-    rev: 10.0.0b1
+    rev: 9.0.2
     hooks:
       - id: isort
         args:
           - .
         pass_filenames: false
-        stages:
-          - manual
-          - pre-merge-commit
-          - pre-push
   - repo: https://github.com/psf/black
     rev: 26.10.1
     hooks:
@@ -70,8 +56,6 @@ repos:
           - .[jupyter]
         args:
           - src
-          # - tests
-          # - noxfile.py
         pass_filenames: false
   - repo: https://github.com/pycqa/bandit
     rev: 1.9.4
@@ -84,26 +68,14 @@ repos:
           - --confidence-level
           - high
           - src
-          # - tests
-          # - noxfile.py
         pass_filenames: false
-        stages:
-          - manual
-          - pre-merge-commit
-          - pre-push
   - repo: https://github.com/pycqa/flake8
     rev: 7.4.1
     hooks:
       - id: flake8
         args:
           - src
-          # - tests
-          # - noxfile.py
         pass_filenames: false
-        stages:
-          - manual
-          - pre-merge-commit
-          - pre-push
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v2.4.0
     hooks:
@@ -116,6 +88,8 @@ repos:
         pass_filenames: false
         stages:
           - manual
+          - pre-merge-commit
+          - pre-push
   - repo: https://github.com/PyCQA/pylint
     rev: v4.1.3
     hooks:
@@ -124,8 +98,6 @@ repos:
           - --disable
           - import-error
           - src
-          # - tests
-          # - noxfile.py
         pass_filenames: false
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.1
@@ -140,24 +112,13 @@ repos:
         pass_filenames: false
         stages:
           - manual
+          - pre-merge-commit
+          - pre-push
   - repo: https://github.com/jendrikseipp/vulture
     rev: v2.16
     hooks:
       - id: vulture
         pass_filenames: false
-        stages:
-          - manual
-          - pre-merge-commit
-          - pre-push
-  - repo: https://github.com/adamchainz/blacken-docs
-    rev: 1.20.0
-    hooks:
-      - id: blacken-docs
-        args:
-          - --line-length
-          - "87"
-          - --target-version
-          - py314
   - repo: https://github.com/numpy/numpydoc
     rev: v1.11.0
     hooks:
@@ -165,6 +126,8 @@ repos:
         files: src
         stages:
           - manual
+          - pre-merge-commit
+          - pre-push
   - repo: https://github.com/abravalheri/validate-pyproject
     rev: '0.26'
     hooks:
@@ -183,6 +146,8 @@ repos:
           - --write-changes
         stages:
           - manual
+          - pre-merge-commit
+          - pre-push
 default_language_version:
   python: python3.14
 fail_fast: false

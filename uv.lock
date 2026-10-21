@@ -1,6 +1,12 @@
 version = 1
 revision = 5
 requires-python = "==3.14.*"
+resolution-markers = [
+    "implementation_name == 'cpython'",
+]
+supported-markers = [
+    "implementation_name == 'cpython'",
+]
 
 [[package]]
 name = "aiofile"
@@ -166,18 +172,6 @@ wheels = [
 ]
 
 [[package]]
-name = "blacken-docs"
-version = "1.20.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "black" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/20/bc/c8fbeb90232c3afe0b369de4014c50925a5b3e6fcba5a784d96377da3d09/blacken_docs-1.20.0.tar.gz", hash = "sha256:2d5b6caf6e7da5694b1eba97f9132c1ab9f14f221c82205ec473a6e74fbb2c6d", size = 14988, upload-time = "2025-09-08T15:33:18.47Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/5c/e7/63af39c07bbb019feb1e4f89638410ec08101b59f094c51eb6bd5667b9e9/blacken_docs-1.20.0-py3-none-any.whl", hash = "sha256:a0d842811ee07802dec920d3cf831e21f6eb017712748b488489aa3688770f1e", size = 8324, upload-time = "2025-09-08T15:33:17.135Z" },
-]
-
-[[package]]
 name = "cachetools"
 version = "7.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -219,7 +213,7 @@ name = "cffi"
 version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
+    { name = "pycparser" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9e/ef/008a1939e372c06329a3fce4279c02f328488f3526744906eeec3da7ad5f/cffi-2.1.1.tar.gz", hash = "sha256:dd31f52ea1086513bb9df30f8fcee9b8918323ae067a3d5b78bc826a000712be", size = 530807, upload-time = "2026-08-03T21:21:18.939Z" }
 wheels = [
@@ -327,6 +321,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34", size = 382235, upload-time = "2026-08-26T13:33:14.56Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360", size = 125251, upload-time = "2026-08-26T13:33:12.928Z" },
+]
+
+[[package]]
+name = "codespell"
+version = "2.4.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/19/45e941380f69c042b43423513d201e6592346f992394347f5e7174c31407/codespell-2.4.3.tar.gz", hash = "sha256:cbe085e331227b37bb86ef8bddd08dc768c704ee9a07ca869852c093fa2793e2", size = 352773, upload-time = "2026-07-15T11:51:54.159Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/bf/bdb951d34eb169140b546f44be9ec4525d1acefb9eb5572071f5492b19fc/codespell-2.4.3-py3-none-any.whl", hash = "sha256:af2505b335e8573dbd2d384d1c4ef498f4006f4ba2d6fceca01e55b91f52628a", size = 340736, upload-time = "2026-07-15T11:51:52.925Z" },
 ]
 
 [[package]]
@@ -1108,7 +1111,7 @@ dev = [
     { name = "autoflake" },
     { name = "bandit" },
     { name = "black" },
-    { name = "blacken-docs" },
+    { name = "codespell" },
     { name = "coverage" },
     { name = "flake8" },
     { name = "isort" },
@@ -1136,7 +1139,6 @@ docs = [
 format = [
     { name = "autoflake" },
     { name = "black" },
-    { name = "blacken-docs" },
     { name = "isort" },
     { name = "pyupgrade" },
 ]
@@ -1155,6 +1157,7 @@ test = [
     { name = "pytest-xdist", extra = ["psutil"] },
 ]
 utils = [
+    { name = "codespell" },
     { name = "numpydoc" },
     { name = "ruff" },
 ]
@@ -1178,7 +1181,7 @@ dev = [
     { name = "autoflake", specifier = ">=2.4,<3" },
     { name = "bandit", specifier = ">=1.9.4,<2" },
     { name = "black", specifier = ">=26.10.1,<27" },
-    { name = "blacken-docs", specifier = ">=1.20,<2" },
+    { name = "codespell", extras = ["toml"], specifier = ">=2.4.3,<3" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.16.2,<8" },
     { name = "flake8", specifier = ">=7.4.1,<8" },
     { name = "isort", specifier = ">=9.0.2,<10" },
@@ -1206,7 +1209,6 @@ docs = [
 format = [
     { name = "autoflake", specifier = ">=2.4,<3" },
     { name = "black", specifier = ">=26.10.1,<27" },
-    { name = "blacken-docs", specifier = ">=1.20,<2" },
     { name = "isort", specifier = ">=9.0.2,<10" },
     { name = "pyupgrade", specifier = ">=3.22,<4" },
 ]
@@ -1225,6 +1227,7 @@ test = [
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.8,<4" },
 ]
 utils = [
+    { name = "codespell", extras = ["toml"], specifier = ">=2.4.3,<3" },
     { name = "numpydoc", specifier = ">=1.11,<2" },
     { name = "ruff", specifier = ">=0.17.1,<1" },
 ]
