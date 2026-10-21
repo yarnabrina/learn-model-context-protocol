@@ -1,4 +1,4 @@
-## Reference: https://github.com/gitattributes/gitattributes/blob/9351a0a4d1c25c94ee1eb0f3d2356220d9a48a4d/Common.gitattributes
+## Reference: https://github.com/gitattributes/gitattributes/blob/2c20a14833a5ab196c7fc3effcc72ef4e895f4d4/Common.gitattributes
 
 # Common settings that generally should always be used with your language specific settings
 
@@ -27,7 +27,7 @@
 *.adoc     text
 *.textile  text
 *.mustache text
-*.csv      text
+*.csv      text eol=crlf
 *.tab      text
 *.tsv      text
 *.txt      text
@@ -99,9 +99,9 @@
 .gitignore     export-ignore
 .gitkeep       export-ignore
 
-## Reference: https://github.com/gitattributes/gitattributes/blob/9351a0a4d1c25c94ee1eb0f3d2356220d9a48a4d/Python.gitattributes
-
-# Basic .gitattributes for a python repo.
+## Reference: https://github.com/gitattributes/gitattributes/blob/2c20a14833a5ab196c7fc3effcc72ef4e895f4d4/Python.gitattributes
+#
+# # Basic .gitattributes for a python repo.
 
 # Source files
 # ============
@@ -131,12 +131,12 @@
 # ``shelve``, ``marshal``, ``anydbm``, & ``bsddb``
 # (among others).
 
-## Reference: https://github.com/gitattributes/gitattributes/blob/9351a0a4d1c25c94ee1eb0f3d2356220d9a48a4d/Markdown.gitattributes
+## Reference: https://github.com/gitattributes/gitattributes/blob/2c20a14833a5ab196c7fc3effcc72ef4e895f4d4/Markdown.gitattributes
 
 # Apply override to all files in the directory
 *.md linguist-detectable
 
-## Reference: https://github.com/gitattributes/gitattributes/blob/9351a0a4d1c25c94ee1eb0f3d2356220d9a48a4d/Global/VisualStudioCode.gitattributes
+## Reference: https://github.com/gitattributes/gitattributes/blob/2c20a14833a5ab196c7fc3effcc72ef4e895f4d4/Global/VisualStudioCode.gitattributes
 
 # Fix syntax highlighting on GitHub to allow comments
 .vscode/*.json linguist-language=JSON-with-Comments

@@ -71,9 +71,7 @@ class NoOpContextManager:
 class NoOpMethod:
     """A no-operation method that does nothing."""
 
-    def __call__(
-        self: typing.Self, *args: typing.Any, **kwargs: typing.Any  # noqa: ANN401
-    ) -> NoOpContextManager:
+    def __call__(self: typing.Self, *args: typing.Any, **kwargs: typing.Any) -> NoOpContextManager:
         """Call the no-op method and return a no-op context manager.
 
         Parameters
