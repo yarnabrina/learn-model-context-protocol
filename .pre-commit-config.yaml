@@ -70,14 +70,14 @@ repos:
           - src
         pass_filenames: false
   - repo: https://github.com/pycqa/flake8
-    rev: 7.4.1
+    rev: 7.5.0
     hooks:
       - id: flake8
         args:
           - src
         pass_filenames: false
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.4.0
+    rev: v2.4.1
     hooks:
       - id: mypy
         additional_dependencies:
@@ -100,7 +100,7 @@ repos:
           - src
         pass_filenames: false
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.1
+    rev: v0.17.3
     hooks:
       - id: ruff-check
         args:
@@ -129,11 +129,11 @@ repos:
           - pre-merge-commit
           - pre-push
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: '0.26'
+    rev: 'v0.27'
     hooks:
       - id: validate-pyproject
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.13.4
+    rev: 0.13.6
     hooks:
       - id: uv-lock
   - repo: https://github.com/codespell-project/codespell
